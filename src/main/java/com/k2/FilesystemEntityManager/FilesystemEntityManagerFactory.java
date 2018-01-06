@@ -6,11 +6,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -24,12 +27,7 @@ public class FilesystemEntityManagerFactory {
 	public static final String JSON = ".json";
 	public static final String XML = ".xml";
 	
-	private Logger logger = Logger.getAnonymousLogger();
-	public Logger logger() { return logger; }
-	public FilesystemEntityManagerFactory logger(Logger logger) {
-		this.logger = logger;
-		return this;
-	}
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	
 	public static FilesystemEntityManagerFactory startup(File managerDir) throws FemException {
 		

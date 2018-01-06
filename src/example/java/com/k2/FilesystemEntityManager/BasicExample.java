@@ -1,12 +1,18 @@
 package com.k2.FilesystemEntityManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
+import com.k2.Util.StringUtil;
+
 public class BasicExample {
 
-	public static void main(String[] args) throws FemException {
+	public static void main(String[] args) throws FemException, IOException {
 
 		FilesystemEntityManagerFactory femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
 /*		
@@ -52,9 +58,9 @@ public class BasicExample {
 		
 		foo2.setBars(bars2);
 				
-		fem.save(foo2);
+//		fem.save(foo2);
 		
-		fem.commit();
+//		fem.commit();
 
 		
 		Foo foo = fem.fetch(Foo.class, "thisFoo");
@@ -75,7 +81,9 @@ public class BasicExample {
 			
 		femf.shutdown();
 	
+		File file = new File("example/new/femf/fem.conf");
 		
+		System.out.println(StringUtil.replaceAll("MD5 hash for '{}' is {}", "{}", file.getPath(), Files.hash(file, Hashing.md5())));
 
 	}
 

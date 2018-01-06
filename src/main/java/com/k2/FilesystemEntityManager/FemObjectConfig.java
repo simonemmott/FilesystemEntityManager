@@ -1,13 +1,12 @@
 package com.k2.FilesystemEntityManager;
 
-import java.io.File;
-
 import com.google.gson.annotations.Expose;
+import com.k2.Util.ClassUtil;
 
 public class FemObjectConfig {
 	
 	public FemObjectConfig(Class<?> cls) {
-		resourcePath = File.separatorChar+cls.getSimpleName();
+		resourcePath = ClassUtil.packageNameToPath(cls.getCanonicalName());
 	}
 
 	@Expose private FemDataFormat dataFormat = FemDataFormat.JSON;
@@ -25,6 +24,7 @@ public class FemObjectConfig {
 		return this;
 	}
 	public String resourcePath() {
+		if (resourcePath == null) return "";
 		return resourcePath;
 	}
 	

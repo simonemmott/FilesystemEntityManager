@@ -7,6 +7,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
@@ -17,6 +18,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Identity.Id;
@@ -26,6 +30,8 @@ import com.k2.Util.exceptions.FileLockedException;
 
 public class FilesystemEntityManager {
 	
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 	private FilesystemEntityManagerFactory femFactory;
 	private String id;
 	private File workingDir;
@@ -104,7 +110,7 @@ public class FilesystemEntityManager {
 		if (wrapper == null) return null;
 		return wrapper.obj;
 	}
-	
+/*	
 	private <T> T cache(Class<T> cls, Serializable key, T obj) {
 		if (obj == null) return obj;
 		Map<Serializable, CachedObject<?>> classCache = cache.get(cls);
@@ -122,7 +128,7 @@ public class FilesystemEntityManager {
 		if (!obj.equals(cachedObj.wrappedObj.obj)) throw new FemError("Attempted to cache different objects with the same class and key '"+cls.getCanonicalName()+"("+key+")'");
 		return obj;
 	}
-	
+*/	
 	private <T> T cache(Class<?> cls, Serializable key, FemWrapper<T> wrappedObj) {
 		if (wrappedObj == null) return null;
 		Map<Serializable, CachedObject<?>> classCache = cache.get(cls);
@@ -215,7 +221,7 @@ public class FilesystemEntityManager {
 	
 	private File repoLocation(FemObjectConfig conf) {
 		File repo = femFactory.repository(conf.repository());
-		File repoLocation = new File(repo.getAbsolutePath()+conf.resourcePath());
+		File repoLocation = new File(repo.getAbsolutePath()+File.separatorChar+conf.resourcePath());
 		return repoLocation;
 	}
 	
@@ -228,7 +234,7 @@ public class FilesystemEntityManager {
 			if(!workingRepo.canWrite()) throw new FemError("Unable to write to the working repository '"+workingRepo.getAbsolutePath()+"'");
 			if(!workingRepo.canRead()) throw new FemError("Unable to read from the working repository '"+workingRepo.getAbsolutePath()+"'");
 		}
-		File workingLocation = new File(workingRepo.getAbsolutePath()+conf.resourcePath());
+		File workingLocation = new File(workingRepo.getAbsolutePath()+File.separatorChar+conf.resourcePath());
 		if (!workingLocation.exists()) {
 			workingLocation.mkdirs();
 		} else {
@@ -266,6 +272,7 @@ public class FilesystemEntityManager {
 		}
 		classLocks.put(key, lock);
 	}
+/*
 	private FileLock getLock(Class<?> cls, Serializable key) {
 		Map<Serializable, FileLock> classLocks = locks.get(cls);
 		if (classLocks == null) {
@@ -275,19 +282,20 @@ public class FilesystemEntityManager {
 		if (lock == null) throw new FemError("No lock held for class '"+cls.getCanonicalName()+"' and key '"+key+"'");
 		return lock;
 	}
+*/
 	private boolean holdsLock(Class<?> cls, Serializable key) {
 		Map<Serializable, FileLock> classLocks = locks.get(cls);
 		if (classLocks == null) return false;
 		return classLocks.containsKey(key);
 	}
-	
+/*	
 	private void removeLock(Class<?> cls, Serializable key) {
 		Map<Serializable, FileLock> classLocks = locks.get(cls);
 		if (classLocks == null) return;
 		classLocks.remove(key);
 		if (classLocks.isEmpty()) locks.remove(cls);
 	}
-	
+*/	
 	private <T> void lockInRepo(Class<T> cls, Serializable key) throws FemObjectLockedException {
 		if (!holdsLock(cls, key)) {
 		
@@ -296,7 +304,7 @@ public class FilesystemEntityManager {
 			FemDataFormat objDataFormat = dataFormat(objConf);
 			
 			File repoLocation = repoLocation(objConf);
-			if (!(repoLocation.exists())) repoLocation.mkdirs();
+//			if (!(repoLocation.exists())) repoLocation.mkdirs();
 			
 			File objResource = objResource(repoLocation, objDataFormat, cls, key);
 			
@@ -316,7 +324,7 @@ public class FilesystemEntityManager {
 		}
 		
 	}
-	
+/*	
 	@SuppressWarnings("resource")
 	private <T> void unlockInRepo(Class<T> cls, Serializable key) {
 		
@@ -330,34 +338,7 @@ public class FilesystemEntityManager {
 		
 		removeLock(cls, key);
 	}
-
-	private String logMessage(String msg) {
-		return "Connection: '"+id+"' "+msg;
-	}
-	private void error(String msg, Throwable e) {
-		femFactory.logger().log(Level.SEVERE, logMessage(msg), e);
-	}
-	private void warning(String msg, Throwable e) {
-		femFactory.logger().log(Level.WARNING, logMessage(msg), e);
-	}
-	private void severe(String msg) {
-		femFactory.logger().severe(logMessage(msg));
-	}
-	private void warning(String msg) {
-		femFactory.logger().warning(logMessage(msg));
-	}
-	private void info(String msg) {
-		femFactory.logger().info(logMessage(msg));
-	}
-	private void fine(String msg) {
-		femFactory.logger().fine(logMessage(msg));
-	}
-	private void finer(String msg) {
-		femFactory.logger().finer(logMessage(msg));
-	}
-	private void finest(String msg) {
-		femFactory.logger().finest(logMessage(msg));
-	}
+*/
 	
 	private <T> Integer readOcn(Class<T> cls, Serializable key) {
 		
@@ -388,26 +369,65 @@ public class FilesystemEntityManager {
 		return wrappedOcn.ocn;
 		
 	}
+	
+	public Integer getOcn(Object obj) {
+		Serializable key;
+		try {
+			key = IdentityUtil.getId(obj);
+		} catch (IllegalAccessException e) {
+			throw new FemError("Unable to read id field", e);
+		}
+		FemWrapper<?> wrapper = cacheFetchWrapper(obj.getClass(), key);
+		
+		return (wrapper == null) ? null : wrapper.ocn;
+	}
+
+	public Integer getOriginalOcn(Object obj) {
+		Serializable key;
+		try {
+			key = IdentityUtil.getId(obj);
+		} catch (IllegalAccessException e) {
+			throw new FemError("Unable to read id field", e);
+		}
+		CachedObject<?> cached = cacheFetch(obj.getClass(), key);
+		
+		return (cached == null) ? null : cached.originalOcn;
+	}
 
 	@SuppressWarnings("unchecked")
 	public <T> T fetch(Class<T> cls, Serializable key) {
 		
+		logger.debug("fetch: {}({})", cls, key);
 		if (cls == null || key == null) return null;
-		if (isDeleted(cls, key)) return null;
+		if (isDeleted(cls, key)) {
+			logger.trace("Has been deleted: {}({})", cls, key);
+			return null;
+		}
 		
 		T cachedObj = cacheFetchObject(cls, key);
-		if (cachedObj != null) return cachedObj;
+		if (cachedObj != null) {
+			logger.trace("Cache hit: {}({})", cls, key);
+			return cachedObj;
+		}
 		
 		FemObjectConfig objConf = checkConfig(cls);
 
 		File repoLocation = repoLocation(objConf);
-		if (!(repoLocation.exists()&&repoLocation.isDirectory())) return null;
+		logger.trace("repo location: '{}'", repoLocation.getAbsolutePath());
+		if (!(repoLocation.exists()&&repoLocation.isDirectory())) {
+			logger.trace("not found: {}({})", cls, key);
+			return null;
+		}
 
 		FemDataFormat objDataFormat = dataFormat(objConf);
 		
 		FileReader objReader = objectReader(cls, key);
-		if (objReader == null) return null;		
+		if (objReader == null) {
+			logger.trace("not found: {}({})", cls, key);
+			return null;		
+		}
 		
+		logger.trace("read from reader: '{}'", objReader);
 		FemWrapper<T> wrappedObj = null;
 		switch(objConf.dataStructure()) {
 		case OCN:
@@ -447,7 +467,11 @@ public class FilesystemEntityManager {
 		
 		cache(cls, key, wrappedObj);
 		
-		if (wrappedObj == null) return null;
+		if (wrappedObj == null || wrappedObj.obj == null) {
+			logger.trace("not found: {}({})", cls, key);
+			return null;
+		}
+		logger.trace("found: {}({})", cls, key);
 		return wrappedObj.obj;
 		
 	}
@@ -484,7 +508,8 @@ public class FilesystemEntityManager {
 				cache(obj.getClass(), key, (FemWrapper<T>)output);
 				dirty(obj.getClass(), key, (FemWrapper<T>)output);
 			} else {
-				if (!cached.originalOcn.equals(readOcn(obj.getClass(), key))) throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
+				Integer readOcn = readOcn(obj.getClass(), key);
+				if (readOcn != null && !cached.originalOcn.equals(readOcn)) throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
 				cached.wrappedObj.ocn++;
 				cached.wrappedObj.obj = obj;
 				output = cached.wrappedObj;
@@ -498,7 +523,8 @@ public class FilesystemEntityManager {
 				cache(obj.getClass(), key, (FemWrapperAndVersion<T>)output);
 				dirty(obj.getClass(), key, (FemWrapper<T>)output);
 			} else {
-				if (!cached.originalOcn.equals(readOcn(obj.getClass(), key))) throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
+				Integer readOcn = readOcn(obj.getClass(), key);
+				if (readOcn != null && !cached.originalOcn.equals(readOcn)) throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
 				cached.wrappedObj.ocn++;
 				cached.wrappedObj.obj = obj;
 				((FemWrapperAndVersion<T>)cached.wrappedObj).version.increment(Increment.POINT);
@@ -574,12 +600,14 @@ public class FilesystemEntityManager {
 			File repoLocation = repoLocation(objConfig);
 			File workingLocation = workingLocation(objConfig);
 			for (Serializable key : dirtyClasses.keySet()) {
-				
+				FemWrapper<?> wrapper = dirtyClasses.get(key);
+				CachedObject<?> cached = cacheFetch(cls, key);
 				File workingFile = objResource(workingLocation, dataFormat, cls, key);
 				File repoFile = objResource(repoLocation, dataFormat, cls, key);
 				
 				try {
 					Files.move(workingFile.toPath(), repoFile.toPath(), ATOMIC_MOVE, REPLACE_EXISTING);
+					cached.originalOcn = wrapper.ocn;
 				} catch (IOException e) {
 					try {
 						Files.move(workingFile.toPath(), repoFile.toPath(), REPLACE_EXISTING);
@@ -626,9 +654,16 @@ public class FilesystemEntityManager {
 			for (Serializable key : classLocks.keySet()) {
 				FileLock lock = classLocks.get(key);
 				try {
+					if (lock.channel().size() == 0) {
+						FemObjectConfig objConfig = checkConfig(cls);
+						File repoLocation = repoLocation(objConfig);
+						FemDataFormat dataFormat = dataFormat(objConfig);
+						File repoFile = objResource(repoLocation, dataFormat, cls, key);
+						repoFile.delete();
+					}
 					lock.release();
 				} catch (IOException e) {
-					error("Unable to relase lock for '"+cls.getName()+"("+key+")", e);
+					logger.error("Unable to relase lock for '"+cls.getName()+"("+key+")", e);
 				}
 			}
 		}
