@@ -1,24 +1,33 @@
 package com.k2.FilesystemEntityManager;
 
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
+
 import com.google.gson.annotations.Expose;
 import com.k2.Util.Identity.Id;
 
-public class Too implements Id<Too, Integer> {
+public class Too {
 
-	@Expose Integer id;
-	@Expose String name;
-	@Expose String description;
-	Foo foo;
-	public Integer getId() { return id; }
-	public Too setId(Integer key) {
-		id = key;
+	@Expose public String id;
+	@Expose public Integer sequence;
+	@Expose public String description;
+	@Expose public Set<Bar> bars;
+	
+	public String getId() { return id; }
+	public Too setId(String id) {
+		this.id = id;
 		return this;
 	}
-	public String getName() {
-		return name;
+	public Too setId(Serializable key) {
+		id = (String) key;
+		return this;
 	}
-	public Too setName(String name) {
-		this.name = name;
+	public Integer getSequence() {
+		return sequence;
+	}
+	public Too setSequence(Integer sequence) {
+		this.sequence = sequence;
 		return this;
 	}
 	public String getDescription() {
@@ -28,6 +37,17 @@ public class Too implements Id<Too, Integer> {
 		this.description = description;
 		return this;
 	}
-	
+	public Too addBar(Bar bar) {
+		if (bars == null) bars = new HashSet<Bar>();
+		bars.add(bar);
+		return this;
+	}
+	public Set<Bar> getBars() {
+		return bars;
+	}
+	public Set<Bar> setBars(Set<Bar> bars) {
+		this.bars = bars;
+		return bars;
+	}
 	
 }

@@ -33,6 +33,110 @@ For example output and detailed documentation please view the [javadoc](https://
 [GNU GENERAL PUBLIC LICENSE v3](http://fsf.org/)
 
 ## Basic Example
+With the class `Too` as defined belwo
+```java
+public class Too {
+
+	@Expose public String id;
+	@Expose public Integer sequence;
+	@Expose public String description;
+	@Expose public Set<Bar> bars;
+	
+	public String getId() { return id; }
+	public Too setId(String id) {
+		this.id = id;
+		return this;
+	}
+	public Too setId(Serializable key) {
+		id = (String) key;
+		return this;
+	}
+	public Integer getSequence() {
+		return sequence;
+	}
+	public Too setSequence(Integer sequence) {
+		this.sequence = sequence;
+		return this;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public Too setDescription(String description) {
+		this.description = description;
+		return this;
+	}
+	public Too addBar(Bar bar) {
+		if (bars == null) bars = new HashSet<Bar>();
+		bars.add(bar);
+		return this;
+	}
+	public Set<Bar> getBars() {
+		return bars;
+	}
+	public Set<Bar> setBars(Set<Bar> bars) {
+		this.bars = bars;
+		return bars;
+	}
+	
+}
+```
+The java below
+```
+FilesystemEntityManagerFactory femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
+
+femf.config().objectConfig(Too.class);
+femf.config().setDefaultRepo(new File("example/repos/default"));
+
+FilesystemEntityManager fem = femf.entityManager();
+
+Too too = new Too()
+		.setId("too")
+		.setDescription("This is a Too!")
+		.setSequence(1)
+		.addBar(new Bar()
+				.setId(1)
+				.setName("Bar 1")
+				.setDescription("This is bar one!"))
+		.addBar(new Bar()
+				.setId(2)
+				.setName("Bar 2")
+				.setDescription("This is bar two!"));
+		
+fem.save(too);
+
+fem.commit();
+
+fem.close();
+
+femf.shutdown();
+```
+Creates the file too.json 
+```json
+{
+  "obj": {
+    "id": "too",
+    "sequence": 1,
+    "description": "This is a Too!",
+    "bars": [
+      {
+        "id": 2,
+        "name": "Bar 2",
+        "description": "This is bar two!"
+      },
+      {
+        "id": 1,
+        "name": "Bar 1",
+        "description": "This is bar one!"
+      }
+    ]
+  },
+  "ocn": 0
+}
+```
+In the directory `example/repos/default/com/k2/FilesystemEntityManager/Too`
+
+In order to do so the directory `example/repos` and `example/femf` must exist.
+
 
 
 

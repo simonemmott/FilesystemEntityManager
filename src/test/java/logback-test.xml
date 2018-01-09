@@ -9,7 +9,7 @@
   </appender>
 
   <!-- <logger name="com.k2.FilesystemEntityManager.FemTestClient" level="off"/> -->
-  <root level="warn">
+  <root level="trace">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

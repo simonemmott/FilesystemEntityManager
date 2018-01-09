@@ -1,0 +1,20 @@
+{
+  "obj": {
+    "id": "too",
+    "sequence": 1,
+    "description": "This is a Too!",
+    "bars": [
+      {
+        "id": 2,
+        "name": "Bar 2",
+        "description": "This is bar two!"
+      },
+      {
+        "id": 1,
+        "name": "Bar 1",
+        "description": "This is bar one!"
+      }
+    ]
+  },
+  "ocn": 0
+}

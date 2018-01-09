@@ -1,6 +1,7 @@
 package com.k2.FilesystemEntityManager;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.google.gson.annotations.Expose;
@@ -34,6 +35,11 @@ public class Foo implements Id<Foo, String> {
 	}
 	public Foo setDescription(String description) {
 		this.description = description;
+		return this;
+	}
+	public Foo addBar(Bar bar) {
+		if (bars == null) bars = new HashSet<Bar>();
+		bars.add(bar);
 		return this;
 	}
 	public Set<Bar> getBars() {
