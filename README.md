@@ -26,7 +26,7 @@ File system entity managers provide the following methods for interacting with e
 | `commit()`                   | This method commits all the changes to objects currently managed by this entity manager and updates the repository accordingly and realeases all locks held by the entity manager |
 | `rollback()`                 | This method rolls back all changes to objects currently managed by this entity manager, clears this entity managers cache of attached objects and releases all the locks held by this entity manager |
 
-For example output and detailed documentation please view the [javadoc](https://simonemmott.github.io/Html5Builder/index.html) documentation
+For example output and detailed documentation please view the [javadoc](https://simonemmott.github.io/FilesystemEntityManager/index.html) documentation
 
 ### License
 
