@@ -33,7 +33,7 @@ For example output and detailed documentation please view the [javadoc](https://
 [GNU GENERAL PUBLIC LICENSE v3](http://fsf.org/)
 
 ## Basic Example
-With the class `Too` as defined belwo
+With the class `Too` as defined as below
 ```java
 public class Too {
 
@@ -45,10 +45,6 @@ public class Too {
 	public String getId() { return id; }
 	public Too setId(String id) {
 		this.id = id;
-		return this;
-	}
-	public Too setId(Serializable key) {
-		id = (String) key;
 		return this;
 	}
 	public Integer getSequence() {
@@ -137,6 +133,27 @@ In the directory `example/repos/default/com/k2/FilesystemEntityManager/Too`
 
 In order to do so the directory `example/repos` and `example/femf` must exist.
 
+The instance of the class `Too` can be retrieved with the java below
+```java
+Too too = fem.fetch(Too.class, "too");
+```
+Changes can be made to the fetched instance and saved with the save method
+```java
+fem.save(too);
+
+fem.commit();
+```
+Having saved or fetched the instance `too` of the class `Too` the persisted data for the instance can be deleted with the following java
+```java
+fem.delete(too);
+
+fem.commit();
+```
+Changes made to the persisted instance data can be discarded with the following java
+```java
+fem.rollback()
+```
+The `rollback()` method discards all changes made with the `save(...)` and `delete(...)` methods since the last call to the `commit()` method or since the entity manager was created.
 
 
 
@@ -157,7 +174,7 @@ Maven users can add this project using the following additions to the pom.xml fi
 </dependencies>
 ```
 
-## Working With Html5Builder
+## Working With FilesystemEntityManager
 
 
 

@@ -1,11 +1,9 @@
 package com.k2.FilesystemEntityManager;
 
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
 import com.google.gson.annotations.Expose;
-import com.k2.Util.Identity.Id;
 
 public class Too {
 
@@ -17,10 +15,6 @@ public class Too {
 	public String getId() { return id; }
 	public Too setId(String id) {
 		this.id = id;
-		return this;
-	}
-	public Too setId(Serializable key) {
-		id = (String) key;
 		return this;
 	}
 	public Integer getSequence() {
