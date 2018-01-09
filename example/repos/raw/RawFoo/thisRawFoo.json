@@ -1,0 +1,17 @@
+{
+  "id": "thisRawFoo",
+  "sequence": 1,
+  "description": "This has been updated",
+  "bars": [
+    {
+      "id": 2,
+      "name": "Bar2",
+      "description": "This is bar two!"
+    },
+    {
+      "id": 1,
+      "name": "Bar1",
+      "description": "This is bar one!"
+    }
+  ]
+}

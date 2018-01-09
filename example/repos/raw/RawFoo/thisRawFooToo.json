@@ -1,0 +1,17 @@
+{
+  "id": "thisRawFooToo",
+  "sequence": 1,
+  "description": "This is a RawFoo too!",
+  "bars": [
+    {
+      "id": 2,
+      "name": "Bar2",
+      "description": "This is RawFoo two bar two!"
+    },
+    {
+      "id": 1,
+      "name": "Bar1",
+      "description": "This is RawFoo two bar one!"
+    }
+  ]
+}

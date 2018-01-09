@@ -8,8 +8,11 @@ import org.junit.runners.Suite;
 	FemConfigTests.class,
 	FemSingleActionTests.class,
 	FemMultipleActionTests.class,
-	FemMultiThreadedTests.class
+	FemSingleActionXmlTests.class,
+	FemMultipleActionXmlTests.class,
+	FemMultiThreadedTests.class,
+	FemRawTests.class
 })
-public class FilesystemEntityManagerTestSuite {
+public class FemTestSuite {
 
 }

@@ -43,14 +43,14 @@ public class FemTestClient extends Thread {
 		private String message = null;
 		public String getMessage() { return (message != null) ? message : cause.getMessage(); }
 		
-		private Fault(String message) {
-			this.message = message;
+		private Fault(String message, Object ... replacements) {
+			this.message = StringUtil.replaceAll(message, "{}", replacements);
 		}
 		private Fault(Throwable cause) {
 			this.cause = cause;
 		}
-		private Fault(String message, Throwable cause) {
-			this.message = message;
+		private Fault(String message, Throwable cause, Object ... replacements) {
+			this.message = StringUtil.replaceAll(message, "{}", replacements);
 			this.cause = cause;
 		}
 	}
@@ -59,17 +59,18 @@ public class FemTestClient extends Thread {
 		String message = null;
 		Object result = null;
 		
-		private Success(String message) {
-			logger.trace("Success: {}", message);
-			this.message = message;
+		private Success(String message, String ... replacements) {
+			this.message = StringUtil.replaceAll(message, "{}", replacements);
 		}
 		private Success(Object result) {
-			logger.trace("Success: {}", StringUtil.toString(result));
-			this.result = result;
+			if (result instanceof String) {
+				this.message = (String)result;
+			} else {
+				this.result = result;
+			}
 		}
-		private Success(String message, Object result) {
-			logger.trace("Success: {}, {}", message, StringUtil.toString(result));
-			this.message = message;
+		private Success(String message, Object result, String ... replacements) {
+			this.message = StringUtil.replaceAll(message, "{}", replacements);
 			this.result = result;
 		}
 		public String getMessage() { return message; }
@@ -171,15 +172,15 @@ public class FemTestClient extends Thread {
 					logger.debug(name+": Deleting");
 					Object obj = args[0];
 					try {
-						setResult(new Success("Deleted: "+obj.getClass().getCanonicalName()+"("+IdentityUtil.getId(obj)+")", fem.delete(obj)));
+						setResult(new Success("Deleted: {}({})", fem.delete(obj), obj.getClass().getCanonicalName(), IdentityUtil.getId(obj).toString()));
 					} catch (Throwable cause) {
 						Fault f;
 						try {
-							f = new Fault("Delete failure for: "+obj.getClass().getCanonicalName()+"("+IdentityUtil.getId(obj)+")", cause);
+							f = new Fault("Delete failure for: {}({})", cause, obj.getClass().getCanonicalName(), IdentityUtil.getId(obj)) ;
 							logger.error(f.getMessage(), cause);
 							setResult(f);
 						} catch (Throwable e) {
-							f = new Fault("Delete failure for: "+obj.getClass().getCanonicalName(), cause);
+							f = new Fault("Delete failure for: {}", cause, obj.getClass().getCanonicalName());
 							logger.error(f.getMessage(), cause);
 							setResult(f);
 						}
@@ -198,7 +199,7 @@ public class FemTestClient extends Thread {
 					Class<?> cls = (Class<?>) args[0];
 					Serializable key = (Serializable) args[1];
 					try {
-						setResult(new Success("Fetched: "+cls.getCanonicalName()+"("+key+")", fem.fetch(cls, key)));
+						setResult(new Success("Fetched: {}({})", fem.fetch(cls, key), cls.getCanonicalName(), key.toString()));
 					} catch (Throwable cause) {
 						Fault f = new Fault("Fetch failure for: "+cls.getCanonicalName()+"("+key+")", cause);
 						logger.error(f.getMessage(), cause);
@@ -225,17 +226,26 @@ public class FemTestClient extends Thread {
 					Object obj = args[0];
 					try {
 						setResult(new Success("Saved: "+obj.getClass().getCanonicalName()+"("+IdentityUtil.getId(obj)+")", fem.save(obj)));
+					} catch (FemObjectLockedException e) {
+						Fault f;
+						f = new Fault("Object locked when saving {}({})", e, obj.getClass().getCanonicalName(), IdentityUtil.getId(obj).toString());
+						logger.warn(f.getMessage());
+						setResult(f);
+					} catch (FemMutatedObjectException e) {
+						Fault f;
+						f = new Fault("Object changed by another connection when saving {}({})", e, obj.getClass().getCanonicalName(), IdentityUtil.getId(obj).toString());
+						logger.warn(f.getMessage());
+						setResult(f);
+					} catch (FemDuplicateKeyException e) {
+						Fault f;
+						f = new Fault("Duplicate key detected when saving {}({})", e, obj.getClass().getCanonicalName(), IdentityUtil.getId(obj).toString());
+						logger.warn(f.getMessage());
+						setResult(f);
 					} catch (Throwable cause) {
 						Fault f;
-						try {
-							f = new Fault("Save failure for: "+obj.getClass().getCanonicalName()+"("+IdentityUtil.getId(obj)+")", cause);
-							logger.error(f.getMessage(), cause);
-							setResult(f);
-						} catch (Throwable e) {
-							f = new Fault("Save failure for: "+obj.getClass().getCanonicalName(), cause);
-							logger.error(f.getMessage(), cause);
-							setResult(f);
-						}
+						f = new Fault("Save failure for: "+obj.getClass().getCanonicalName()+"("+IdentityUtil.getId(obj)+")", cause);
+						logger.error(f.getMessage(), cause);
+						setResult(f);
 					}
 				}
 				break;

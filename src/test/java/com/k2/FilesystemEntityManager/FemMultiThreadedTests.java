@@ -3,19 +3,13 @@ package com.k2.FilesystemEntityManager;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 import com.k2.FilesystemEntityManager.FemTestClient.*;
-import com.k2.Util.ClassUtil;
-import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 
 
@@ -28,6 +22,8 @@ public class FemMultiThreadedTests {
     {
 		
 		FilesystemEntityManagerFactory femf = null;
+		FemTestClient ftc1 = null;
+		FemTestClient ftc2 = null;
 		try {
 			logger.info("Starting filesystem entity manager factory");
 			femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -36,14 +32,18 @@ public class FemMultiThreadedTests {
 	        
 	        Waiter waiter = new Waiter();
 	        
-	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Connection1", waiter, femf.connect());
+	        logger.debug("Creating filesystem entity manager connection 1");
+	        ftc1 = new FemTestClient("Connection1", waiter, femf.entityManager());
 	        
-	        File connection = new File("example/femf/connections/"+ftc.entityManager().getId());
-	        assertTrue(connection.exists());
-
-	        logger.debug("Starting connection thread");
-	        ftc.start();
+	        logger.debug("Starting connection 1 thread");
+	        ftc1.start();
+	        synchronized(waiter) { waiter.wait(); }
+	        
+	        logger.debug("Creating filesystem entity manager connection 2");
+	        ftc2 = new FemTestClient("Connection2", waiter, femf.entityManager());
+	        
+	        logger.debug("Starting connection 2 thread");
+	        ftc2.start();
 	        synchronized(waiter) { waiter.wait(); }
 	        
 	        Foo foo1;
@@ -54,63 +54,129 @@ public class FemMultiThreadedTests {
 						.setSequence(1);
 				
 				logger.debug("Saving Foo with id '{}'", foo1.id);
-		        synchronized(ftc.waiter()) { ftc.save(foo1).notify(); }
+		        synchronized(ftc1.waiter()) { ftc1.save(foo1).notify(); }
 		        synchronized(waiter) { waiter.wait(); }
 		        
-		        if (ftc.getResult() instanceof Success) {
+		        if (ftc1.getResult() instanceof Success) {
 		        		break;
 		        } else {
-		        		if (((Fault)ftc.getResult()).getCause() instanceof FemDuplicateKeyException) {
+		        		if (((Fault)ftc1.getResult()).getCause() instanceof FemDuplicateKeyException) {
 		        			logger.debug("Duplicat key detected. Trying again");
 		        		} else {
-		        			throw new FemError(((Fault)ftc.getResult()).getCause());
+		        			throw new FemError(((Fault)ftc1.getResult()).getCause());
 		        		}
 		        }
 	        }
-	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/default/Foo/"+foo1.getId()+".json");
-	        logger.trace("Working file: {}", working.getPath());
-	        File repo = new File("example/repos/default/Foo/"+foo1.getId()+".json");
-	        logger.trace("Repo file: {}", repo.getPath());
 	        
-	        assertNotNull(ftc.entityManager().getOcn(foo1));
-	        logger.trace("Ocn: {}", ftc.entityManager().getOcn(foo1));
-	        assertNotNull(ftc.entityManager().getOriginalOcn(foo1));
-	        logger.trace("Original Ocn: {}", ftc.entityManager().getOriginalOcn(foo1));
-	        assertEquals(new Integer(0), ftc.entityManager().getOcn(foo1));
-	        assertEquals(ftc.entityManager().getOcn(foo1), ftc.entityManager().getOriginalOcn(foo1));
-
-	        assertTrue(working.exists());
-	        assertTrue(repo.exists());
-	        assertTrue(FileUtil.isLocked(repo));
+	        logger.debug("Committing connection 1");
+	        synchronized(ftc1.waiter()) { ftc1.commit().notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc1.getResult() instanceof Success);
+	        
+			logger.debug("Fetch Foo with id '{}' on connection 2", foo1.id);
+	        synchronized(ftc2.waiter()) { ftc2.fetch(Foo.class, foo1.id).notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Success);
+	        
+	        Foo foo2 = (Foo)((Success)ftc2.getResult()).result;
+	        logger.debug("Fetched Foo({}) from foo1.id: {} on connection 1", foo2.id, foo1.id); 
+	        
+	        foo2 = null;
+	        
+	        synchronized(ftc2.waiter()) { ftc2.rollback().notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc1.getResult() instanceof Success);
 	        
 	        foo1.description = foo1.description + " updated!";
 
-			logger.debug("Saving updated Foo with id '{}'", foo1.id);
-	        synchronized(ftc.waiter()) { ftc.save(foo1).notify(); }
+			logger.debug("Saving updated foo1 with id '{}' on connection 1", foo1.id);
+	        synchronized(ftc1.waiter()) { ftc1.save(foo1).notify(); }
 	        synchronized(waiter) { waiter.wait(); }
-	        assertTrue(ftc.getResult() instanceof Success);
-	        	        
-	        logger.debug("Committing connection");
-	        synchronized(ftc.waiter()) { ftc.commit().notify(); }
-	        synchronized(waiter) { waiter.wait(); }
-	        assertTrue(ftc.getResult() instanceof Success);
-
-	        assertFalse(working.exists());
-	        assertTrue(repo.exists());
-
-	        logger.debug("Ending connection thread");
-	        synchronized(ftc.waiter()) {ftc.end().notify(); }
-	        synchronized(waiter) { waiter.wait(); }
-	        assertTrue(ftc.getResult() instanceof Success);
+	        assertTrue(ftc1.getResult() instanceof Success);
 	        
-            ftc.join();
+			logger.debug("Fetch Foo with id '{}' on connection 2", foo1.id);
+	        synchronized(ftc2.waiter()) { ftc2.fetch(Foo.class, foo1.id).notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Success);
+	        
+	        foo2 = (Foo)((Success)ftc2.getResult()).result;
+	        logger.debug("Fetched Foo({}) from foo1.id: {} on connection 2", foo2.id, foo1.id); 
+	        
+	        foo2.description = "This will fail";
+	        
+			logger.debug("Saving updated foo2 with id '{}' before committing connecion 1", foo2.id);
+	        synchronized(ftc2.waiter()) { ftc2.save(foo2).notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Fault);
+	        
+	        Fault fault = (Fault)ftc2.getResult();
+	        logger.debug("Fault message: '{}'", fault.getMessage());
+	        assertTrue(fault.getCause() instanceof FemObjectLockedException);
+	        
+	        logger.debug("Committing connection 1");
+	        synchronized(ftc1.waiter()) { ftc1.commit().notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc1.getResult() instanceof Success);
+	        
+			logger.debug("Saving updated foo2 with id '{}' after committing connection 1", foo2.id);
+	        synchronized(ftc2.waiter()) { ftc2.save(foo2).notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Fault);
+	        
+	        fault = (Fault)ftc2.getResult();
+	        logger.debug("Fault message: '{}'", fault.getMessage());
+	        assertTrue(fault.getCause() instanceof FemMutatedObjectException);
+	        
+			logger.debug("Fetch Foo with id '{}' on connection 2", foo1.id);
+	        synchronized(ftc2.waiter()) { ftc2.fetch(Foo.class, foo1.id).notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Success);
+	        
+	        foo2 = (Foo)((Success)ftc2.getResult()).result;
+	        logger.debug("Fetched Foo({}) from foo1.id: {} on connection 2", foo2.id, foo1.id); 
+	        
+	        foo2.description = "This will succeed";
+	        
+			logger.debug("Saving updated foo2 with id '{}' fetched and updated after committing connecion 1", foo2.id);
+	        synchronized(ftc2.waiter()) { ftc2.save(foo2).notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Success);
+	        	        
+	        logger.debug("Committing connection 2");
+	        synchronized(ftc2.waiter()) { ftc2.commit().notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Success);
 
-	        assertFalse(connection.exists());
+	        logger.debug("Ending connection 1 thread");
+	        synchronized(ftc1.waiter()) {ftc1.end().notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc1.getResult() instanceof Success);
+	        
+	        logger.debug("Ending connection 2 thread");
+	        synchronized(ftc2.waiter()) {ftc2.end().notify(); }
+	        synchronized(waiter) { waiter.wait(); }
+	        assertTrue(ftc2.getResult() instanceof Success);
+	        
+	        ftc1.interrupt();
+	        ftc1.join();
+	        ftc2.interrupt();
+	        ftc2.join();
 
 	        logger.info("Done");
-
         
 		} finally {
+			if (ftc1 != null) {
+				if (ftc1.isAlive()) {
+					ftc1.end();
+					ftc1.interrupt();
+				}
+			}
+			if (ftc2 != null) {
+				if (ftc2.isAlive()) {
+					ftc2.end();
+					ftc2.interrupt();
+				}
+			}
 			if (femf != null) {
 				logger.info("Shutting down filesystem entity manager factory");
 				femf.shutdown();

@@ -4,7 +4,7 @@
 
   <groupId>com.k2</groupId>
   <artifactId>FilesystemEntityManager</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>jar</packaging>
 
   <name>FilesystemEntityManager</name>
@@ -21,7 +21,7 @@
     <dependency>
       <groupId>com.k2</groupId>
       <artifactId>Util</artifactId>
-      <version>0.2.1-SNAPSHOT</version>
+      <version>0.2.4</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>

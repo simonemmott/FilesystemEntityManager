@@ -22,7 +22,7 @@ public class ThreadedExample {
 	        FemTestClient.Waiter waiter = new FemTestClient.Waiter();
 	        
 	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Conection1", waiter, femf.connect());
+	        FemTestClient ftc = new FemTestClient("Conection1", waiter, femf.entityManager());
 
 	        logger.debug("Starting connection thread");
 	        ftc.start();

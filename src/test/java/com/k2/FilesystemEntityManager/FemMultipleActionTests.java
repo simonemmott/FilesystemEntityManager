@@ -3,18 +3,13 @@ package com.k2.FilesystemEntityManager;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
 
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 import com.k2.FilesystemEntityManager.FemTestClient.*;
-import com.k2.Util.ClassUtil;
 import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 
@@ -28,6 +23,7 @@ public class FemMultipleActionTests {
     {
 		
 		FilesystemEntityManagerFactory femf = null;
+		FemTestClient ftc = null;
 		try {
 			logger.info("Starting filesystem entity manager factory");
 			femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -37,7 +33,7 @@ public class FemMultipleActionTests {
 	        Waiter waiter = new Waiter();
 	        
 	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Connection1", waiter, femf.connect());
+	        ftc = new FemTestClient("Connection1", waiter, femf.entityManager());
 	        
 	        File connection = new File("example/femf/connections/"+ftc.entityManager().getId());
 	        assertTrue(connection.exists());
@@ -101,6 +97,7 @@ public class FemMultipleActionTests {
 	        synchronized(waiter) { waiter.wait(); }
 	        assertTrue(ftc.getResult() instanceof Success);
 	        
+	        ftc.interrupt();
             ftc.join();
 
 	        assertFalse(connection.exists());
@@ -109,6 +106,12 @@ public class FemMultipleActionTests {
 
         
 		} finally {
+			if (ftc != null) {
+				if (ftc.isAlive()) {
+					ftc.end();
+					ftc.interrupt();
+				}
+			}
 			if (femf != null) {
 				logger.info("Shutting down filesystem entity manager factory");
 				femf.shutdown();
@@ -122,6 +125,7 @@ public class FemMultipleActionTests {
     {
 		
 		FilesystemEntityManagerFactory femf = null;
+		FemTestClient ftc = null;
 		try {
 			logger.info("Starting filesystem entity manager factory");
 			femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -131,7 +135,7 @@ public class FemMultipleActionTests {
 	        Waiter waiter = new Waiter();
 	        
 	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Connection1", waiter, femf.connect());
+	        ftc = new FemTestClient("Connection1", waiter, femf.entityManager());
 	        
 	        File connection = new File("example/femf/connections/"+ftc.entityManager().getId());
 	        assertTrue(connection.exists());
@@ -226,6 +230,7 @@ public class FemMultipleActionTests {
 	        synchronized(waiter) { waiter.wait(); }
 	        assertTrue(ftc.getResult() instanceof Success);
 	        
+	        ftc.interrupt();
             ftc.join();
 
 	        assertFalse(connection.exists());
@@ -234,6 +239,12 @@ public class FemMultipleActionTests {
 
         
 		} finally {
+			if (ftc != null) {
+				if (ftc.isAlive()) {
+					ftc.end();
+					ftc.interrupt();
+				}
+			}
 			if (femf != null) {
 				logger.info("Shutting down filesystem entity manager factory");
 				femf.shutdown();
@@ -247,6 +258,7 @@ public class FemMultipleActionTests {
     {
 		
 		FilesystemEntityManagerFactory femf = null;
+		FemTestClient ftc = null;
 		try {
 			logger.info("Starting filesystem entity manager factory");
 			femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -256,7 +268,7 @@ public class FemMultipleActionTests {
 	        Waiter waiter = new Waiter();
 	        
 	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Connection1", waiter, femf.connect());
+	        ftc = new FemTestClient("Connection1", waiter, femf.entityManager());
 	        
 	        File connection = new File("example/femf/connections/"+ftc.entityManager().getId());
 	        assertTrue(connection.exists());
@@ -351,6 +363,7 @@ public class FemMultipleActionTests {
 	        synchronized(waiter) { waiter.wait(); }
 	        assertTrue(ftc.getResult() instanceof Success);
 	        
+	        ftc.interrupt();
             ftc.join();
 
 	        assertFalse(connection.exists());
@@ -359,6 +372,12 @@ public class FemMultipleActionTests {
 
         
 		} finally {
+			if (ftc != null) {
+				if (ftc.isAlive()) {
+					ftc.end();
+					ftc.interrupt();
+				}
+			}
 			if (femf != null) {
 				logger.info("Shutting down filesystem entity manager factory");
 				femf.shutdown();
@@ -373,6 +392,7 @@ public class FemMultipleActionTests {
     {
 		
 		FilesystemEntityManagerFactory femf = null;
+		FemTestClient ftc = null;
 		try {
 			logger.info("Starting filesystem entity manager factory");
 			femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -382,7 +402,7 @@ public class FemMultipleActionTests {
 	        Waiter waiter = new Waiter();
 	        
 	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Connection1", waiter, femf.connect());
+	        ftc = new FemTestClient("Connection1", waiter, femf.entityManager());
 	        
 	        File connection = new File("example/femf/connections/"+ftc.entityManager().getId());
 	        assertTrue(connection.exists());
@@ -491,12 +511,19 @@ public class FemMultipleActionTests {
 	        assertEquals("Ending:", result.getMessage());
 	        logger.info(result.getMessage());
 
+	        ftc.interrupt();
             ftc.join();
 
 	        logger.info("Done");
 
         
 		} finally {
+			if (ftc != null) {
+				if (ftc.isAlive()) {
+					ftc.end();
+					ftc.interrupt();
+				}
+			}
 			if (femf != null) {
 				logger.info("Shutting down filesystem entity manager factory");
 				femf.shutdown();

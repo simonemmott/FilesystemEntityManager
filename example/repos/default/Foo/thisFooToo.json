@@ -2,17 +2,17 @@
   "obj": {
     "id": "thisFooToo",
     "sequence": 1,
-    "description": "This is a foo too!",
+    "description": "This is a Foo too!",
     "bars": [
-      {
-        "id": 2,
-        "name": "Bar2",
-        "description": "This is foo two bar two!"
-      },
       {
         "id": 1,
         "name": "Bar1",
-        "description": "This is foo two bar one!"
+        "description": "This is Foo two bar one!"
+      },
+      {
+        "id": 2,
+        "name": "Bar2",
+        "description": "This is Foo two bar two!"
       }
     ]
   },

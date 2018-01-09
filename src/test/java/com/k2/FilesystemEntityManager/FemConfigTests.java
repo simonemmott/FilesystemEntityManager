@@ -14,9 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import com.k2.FilesystemEntityManager.FemTestClient.*;
-import com.k2.Util.ClassUtil;
 import com.k2.Util.FileUtil;
-import com.k2.Util.StringUtil;
 
 
 public class FemConfigTests {
@@ -53,26 +51,28 @@ public class FemConfigTests {
 		logger.debug("Configuring Foo.class");
 		femf.config().objectConfig(Foo.class)
 			.dataFormat(FemDataFormat.JSON)
-			.dataStructure(FemDataStructure.OCN);
+			.dataStructure(FemDataStructure.OCN)
+			.configure();
 		
 		logger.debug("Configuring Bar.class");
 		femf.config().objectConfig(Bar.class)
 			.dataFormat(FemDataFormat.XML)
-			.dataStructure(FemDataStructure.OCN_AND_VER)
-			.repository("custom");
+			.repository("custom")
+			.configure();
 	
 		logger.debug("Configuring Too.class");
 		femf.config().objectConfig(Too.class)
 			.dataStructure(FemDataStructure.RAW)
 			.resourcePath(Too.class.getSimpleName())
-			.repository("custom");
+			.repository("custom")
+			.configure();
 	
 		logger.info("Saving filesystem entity manager configuration");
 		femf.saveConfig();
 		
 		File config = new File("example/new/femf/fem.conf");
 		assertTrue(config.exists());
-		assertEquals("81a2dff9a929a6e6ea911a7015756e2c", Files.hash(config, Hashing.md5()).toString());
+		assertEquals("61e34025928ecf7fcd28c7deb84dc139", Files.hash(config, Hashing.md5()).toString());
 		
         
 		logger.info("Shutting down filesystem entity manager factory");
@@ -85,6 +85,7 @@ public class FemConfigTests {
     {
 		
 		FilesystemEntityManagerFactory femf = null;
+		FemTestClient ftc = null;
 		try {
 			logger.info("Starting filesystem entity manager factory");
 			femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -94,7 +95,7 @@ public class FemConfigTests {
 	        Waiter waiter = new Waiter();
 	        
 	        logger.debug("Creating filesystem entity manager connection");
-	        FemTestClient ftc = new FemTestClient("Connection1", waiter, femf.connect());
+	        ftc = new FemTestClient("Connection1", waiter, femf.entityManager());
 
 	        logger.debug("Starting connection thread");
 	        ftc.start();
@@ -114,12 +115,19 @@ public class FemConfigTests {
 	        assertEquals("Ending:", result.getMessage());
 	        logger.info(result.getMessage());
 
+	        ftc.interrupt();
             ftc.join();
 
 	        logger.info("Done");
 
         
 		} finally {
+			if (ftc != null) {
+				if (ftc.isAlive()) {
+					ftc.end();
+					ftc.interrupt();
+				}
+			}
 			if (femf != null) {
 				logger.info("Shutting down filesystem entity manager factory");
 				femf.shutdown();
