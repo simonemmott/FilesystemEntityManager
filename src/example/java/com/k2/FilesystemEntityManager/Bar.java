@@ -28,6 +28,4 @@ public class Bar implements Id<Bar, Integer> {
 		this.description = description;
 		return this;
 	}
-	
-	
 }

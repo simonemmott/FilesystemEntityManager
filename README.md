@@ -33,49 +33,6 @@ For example output and detailed documentation please view the [javadoc](https://
 [GNU GENERAL PUBLIC LICENSE v3](http://fsf.org/)
 
 ## Basic Example
-With the class `Too` as defined as below
-```java
-public class Too {
-
-	@Expose public String id;
-	@Expose public Integer sequence;
-	@Expose public String description;
-	@Expose public Set<Bar> bars;
-	
-	public String getId() { return id; }
-	public Too setId(String id) {
-		this.id = id;
-		return this;
-	}
-	public Integer getSequence() {
-		return sequence;
-	}
-	public Too setSequence(Integer sequence) {
-		this.sequence = sequence;
-		return this;
-	}
-	public String getDescription() {
-		return description;
-	}
-	public Too setDescription(String description) {
-		this.description = description;
-		return this;
-	}
-	public Too addBar(Bar bar) {
-		if (bars == null) bars = new HashSet<Bar>();
-		bars.add(bar);
-		return this;
-	}
-	public Set<Bar> getBars() {
-		return bars;
-	}
-	public Set<Bar> setBars(Set<Bar> bars) {
-		this.bars = bars;
-		return bars;
-	}
-	
-}
-```
 The java below
 ```
 FilesystemEntityManagerFactory femf = FilesystemEntityManagerFactory.startup(new File("example/femf"));
@@ -133,6 +90,77 @@ In the directory `example/repos/default/com/k2/FilesystemEntityManager/Too`
 
 In order to do so the directory `example/repos` and `example/femf` must exist.
 
+In the above example classes `Too` and `Bar` were as defined as below
+```java
+public class Too {
+
+	@Expose public String id;
+	@Expose public Integer sequence;
+	@Expose public String description;
+	@Expose public Set<Bar> bars;
+	
+	public String getId() { return id; }
+	public Too setId(String id) {
+		this.id = id;
+		return this;
+	}
+	public Integer getSequence() {
+		return sequence;
+	}
+	public Too setSequence(Integer sequence) {
+		this.sequence = sequence;
+		return this;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public Too setDescription(String description) {
+		this.description = description;
+		return this;
+	}
+	public Too addBar(Bar bar) {
+		if (bars == null) bars = new HashSet<Bar>();
+		bars.add(bar);
+		return this;
+	}
+	public Set<Bar> getBars() {
+		return bars;
+	}
+	public Set<Bar> setBars(Set<Bar> bars) {
+		this.bars = bars;
+		return bars;
+	}
+	
+}
+```
+```java
+public class Bar implements Id<Bar, Integer> {
+
+	@Expose Integer id;
+	@Expose String name;
+	@Expose String description;
+	Foo foo;
+	public Integer getId() { return id; }
+	public Bar setId(Integer key) {
+		id = key;
+		return this;
+	}
+	public String getName() {
+		return name;
+	}
+	public Bar setName(String name) {
+		this.name = name;
+		return this;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public Bar setDescription(String description) {
+		this.description = description;
+		return this;
+	}
+}
+```
 The instance of the class `Too` can be retrieved with the java below
 ```java
 Too too = fem.fetch(Too.class, "too");
