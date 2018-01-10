@@ -200,7 +200,7 @@ public class FemConfig {
 		if (managedClassConfigs == null) managedClassConfigs = new HashMap<Class<?>, FemObjectConfig>();
 		if (xmlContexts == null) xmlContexts = new HashMap<Class<?>, JAXBContext>();
 		managedClassConfigs.put(cls, femObjectConfig);
-		if (femObjectConfig.dataformat() == FemDataFormat.XML) {
+		if (femObjectConfig.dataFormat() == FemDataFormat.XML) {
 			try {
 				xmlContexts.put(cls, JAXBContext.newInstance(FemOcn.class, FemWrapper.class, cls));
 			} catch (JAXBException e) {

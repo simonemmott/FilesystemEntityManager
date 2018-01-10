@@ -204,12 +204,95 @@ Maven users can add this project using the following additions to the pom.xml fi
 
 ## Working With FilesystemEntityManager
 
+### Configuring Storage Parameters
 
+The absolute persistence of the objects instance date is configured by configuring the FilesystemEntityManagerFactory that creates the entity manager.  Using a single entity manager factory to manage the repositories within a single application therefore ensures that all instances of a given class are persisted consistently.
 
+The configuration of an instance of a FilesystemEntityManagerFactory is returned by calling the `config()` method of the FilesystemEntityManagerFactory.  When the entity manager factory is shutdown the current configuration of the entity manager factory is saved in the `femf.conf` file located in the manager directory specified when the instance of the entity manager factory is started up. When the entity manager factory is started up it reads the configuration from the `fem.conf` file in the manager directory. Consequently multiple JVMs can persist data in the same repositories using the same format for the persistent data.
 
+The `fem.conf` file is in JSON format and can therefore be edited manually. Alternatively the configuration of an entity manager factory can be set systematically.
 
+#### Systematic Configuration of Storage Parameters
+Configuration that applies to all of the classes managed by file system entity managers are set by calling methods directly on the instance of `FemConfig` returned by the call to `config()` on the entity manager factory instance.
 
+All these examples are based on an entity manager factoy created with the following java
+```java
+femf = FilesystemEntityManagerFactory.startup(new File("example/new/femf"));
+```
 
+##### Global/Default Configuration
+Configuration that can be applied to all classes managed by entity managers are as follows
+
+| Method | Description |
+|--------|-------------|
+| `dataFormat(FemDataFormat)` | This method sets the default data format of classes persisted by entity managers created by this entity manager factory. The list of possible data formats is listed below. |
+| `setRepo(String, File)`     | This method set the location of the repository identifies by the String alias |
+| `setDefaultRepo(File)`      | This method set the location of the default repository |
+
+The examples below shows setting configuration that is applied to all classes managed by entity managers.
+
+This example configures the default repository as `example/new/repos/default` and an additional repository at `example/new/repos/custom` that is identified with the alias `custom`
+```java
+femf.config()
+	.setDefaultRepo(new File("example/new/repos/default"))
+	.setRepo("custom", new File("example/new/repos/custom"));
+```
+This example configures the default data format as `XML`
+```java
+femf.config()
+	.dataFormat(FemDataFormat.XML);
+```
+
+##### Class Specific Configuration
+Each class managed by entity managers can define storage parameters specific to the class.
+
+The entity manager factory instance defines a method to retrieve the storage configuation for a specific class `objectConfig(Class)`. Calling this method returns the current configuration for the given class and creates a new configuration for the given class if it does not exist. The method returns the instance of `FemObjectConfig` that holds the storage configuration for the given class.
+
+The table below lists the parameters that can be set for the storage of a specific class.
+
+| Method                            | Description |
+|-----------------------------------|-------------|
+| `dataFormat(FemDataFormat)`       | Set the format in which to store the persistence data for instances of the class |
+| `dataStructure(FemDataStructure)` | Set the data structure in which the persistence data for instances of the class |
+| `repository(String)`              | Identity the repository in which to store persistence data for instances of the class |
+| `resourcePath(String)`            | Identify the location within the repository in which to store persistence data for instances of the class |
+
+The following example sets the data format to `JSON` and the data structure to `OCN` for the class `Foo`.
+```java
+femf.config().objectConfig(Foo.class)
+	.dataFormat(FemDataFormat.JSON)
+	.dataStructure(FemDataStructure.OCN);
+```
+Note the above example is equivalent to:
+```java
+femf.config().objectConfig(Foo.class);
+```
+Since `JSON` and `OCN` are the default values for the data format and data structure respectively.
+
+The following example sets the data format to `XML` the data structure to `RAW` and to use the repository with the alias `"custom"` for the class `Too`.
+```java
+femf.config().objectConfig(Too.class)
+	.dataStructure(FemDataStructure.RAW)
+	.resourcePath(Too.class.getSimpleName())
+	.repository("custom")
+	.configure();
+```
+Note the use of the `configure()` method. This is required since the configuration has been changed.
+
+##### Data Formats
+Data formats define the syntax of the files used to store instance data.
+| Data Format           | Description |
+|-----------------------|-------------|
+| `FemDataFormat.JSON ` | The instances persistent data is stored in Javascript Object Notation |
+| `FemDataFormat.XML`   | The instances persistent data is stored in eXtensible Markup Language |
+
+##### Data Structures
+When persistent instance data is stored on the file system it can optionally be stored with an Object Change Number (OCN). The OCN is used to identify whether the persisted instance data has changed between it being fetched into the entity manager cache and being saved by the entity manager
+
+| Data Format         | Description |
+|---------------------|-------------|
+| `FemDataFormat.OCN` | The instances persistent data is stored wrapped in an object with an Integer OCN value |
+| `FemDataFormat.RAW` | The instances persistent data is stored without an OCN value. In this case the files MD5 hash is used to identify whether the object has been changed beween being fetching into the entity manager cache and be saved by the entity manager |
 
 
 

@@ -382,10 +382,10 @@ public class FilesystemEntityManager {
 	 * define a storage format then the default storage format configured for the entity manager factory is returned
 	 */
 	private FemDataFormat dataFormat(FemObjectConfig conf) {
-		if (conf.dataformat() == null) {
+		if (conf.dataFormat() == null) {
 			return femFactory.config().dataFormat();
 		} else {
-			return conf.dataformat();
+			return conf.dataFormat();
 		}
 	}
 	/**

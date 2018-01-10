@@ -65,7 +65,7 @@ public class FemObjectConfig {
 	 * Get the data format for this class
 	 * @return	The data format for this class
 	 */
-	public FemDataFormat dataformat() {
+	public FemDataFormat dataFormat() {
 		return dataFormat;
 	}
 	/**

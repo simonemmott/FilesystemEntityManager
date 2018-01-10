@@ -42,7 +42,7 @@ public class FemConfigTests {
 				
 		logger.info("Creating new filesystem entity manager factory");
 		femf = FilesystemEntityManagerFactory.startup(new File("example/new/femf"));
-
+		
 		logger.debug("Adding repositories to filesystem entity manager factory");
 		femf.config()
 			.setDefaultRepo(new File("example/new/repos/default"))
