@@ -798,11 +798,13 @@ public class FilesystemEntityManager {
 			} else {
 			// If the object does exist in the cache
 				// Check the OCN of the cached version of this object. If it doesn't match the OCN currently stored in the repository
-				// Throw an objct mutated exception
-				Integer readOcn = readOcn(obj.getClass(), key);
-				if (readOcn != null && !cached.originalOcn.equals(readOcn)) {
-					clearCache(obj.getClass(), key);
-					throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
+				// Throw an object mutated exception
+				if (!holdsLock(obj.getClass(), key)) {
+					Integer readOcn = readOcn(obj.getClass(), key);
+					if (readOcn != null && !cached.originalOcn.equals(readOcn)) {
+						clearCache(obj.getClass(), key);
+						throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
+					}
 				}
 				// Update the cache with the object to save and mark it as dirty
 				cached.wrappedObj.ocn++;
@@ -826,10 +828,12 @@ public class FilesystemEntityManager {
 			// If the object does exist in the cache
 				// Compare the hash generated when the object was fetched into the cache with the has of the object in the repository
 				// If the hashes don't match throw an object mutated exception
-				File objResource = objResource(repoLocation, objDataFormat, obj.getClass(), key);
-				if (!cached.wrappedObj.hash.equals(FileUtil.hash(objResource))) {
-					clearCache(obj.getClass(), key);
-					throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
+				if (!holdsLock(obj.getClass(), key)) {
+					File objResource = objResource(repoLocation, objDataFormat, obj.getClass(), key);
+					if (!cached.wrappedObj.hash.equals(FileUtil.hash(objResource))) {
+						clearCache(obj.getClass(), key);
+						throw new FemMutatedObjectException(obj.getClass(), key, repoLocation);
+					}
 				}
 				// Update the cache with the object to save and mark it as dirty
 				cached.wrappedObj.obj = obj;
@@ -902,7 +906,7 @@ public class FilesystemEntityManager {
 		// If it is not managed by this entity manager throw an uncheck FemError
 		@SuppressWarnings("unchecked")
 		CachedObject<T> cached = (CachedObject<T>) cacheFetch(obj.getClass(), key);
-		if (cached == null) throw new FemError("You must fetch an object into the entity manager before you can delete it!");
+		if (cached == null) throw new FemDetachedObjectError(obj.getClass(), key, id);
 		
 		// Lock the resource for this object in the entity manager
 		lockInRepo(obj.getClass(), key);

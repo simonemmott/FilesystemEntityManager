@@ -398,10 +398,44 @@ If the changes are no longer required then the `rollback()` method of the entity
 
 ### Deleting Instances Of Classes Managed By Filesystem Entity Managers
 
+If a class has been configured to be managed by the entity managers then instances of the class can be deleted using the `delete(Object)` method of the entity manager.
+
+Before an object can be deleted via the entity manager it must first be attached to the entity manager either by fetching the object or saving a new object.
+
+The example below shows deleting an instance of a managed class
+```java
+Foo foo = fem.fetch(Foo.class, "deleteMe");
+
+fem.delete(foo);
+```
+If an attempt is made to delete an object that is not attached to the entity manager an unchecked `FemDetachedObjectError` is thrown.
+
+If the object is being edited by another entity manager then a checked `FemObjectLockedException` is thrown.
+
+Deleting an object does not immediately update the repository. The objects resource in the entity manager is locked using the FileLock API to prevent other entity managers from saving changes to the object.
+
+The deleted objects are removed from the repository when the `commit()` method of the entity manager is called.
+
+If the deletion is no longer required then the `rollback()` method of the entity manager can be called.
+
 ### Committing Changes Made By Filesystem Entity Managers
 
-### Discarding Changes Made By Filesystem Entity Managers
+All changes to objects made by entity managers are cached until the `commit()` method of the entity manager is called. The changes are recorded in the working directory of the entity manager to minimise the risk of an IOException during commit and to minimise the time taken to commit changes.
 
+When the entity manager commits its changes the saved version of object resources are moved from the entity managers working directory to the repository, resources for deleted entities are removed from the repository and file locks held by the entity manager are released.
+
+After an entity manager has committed its changes the entity managers working directory will be empty as will the cache of changes held by the entity manager.  Consequently once a change has been committed in the entity manager the change cannot automatically be undone.
+ 
+### Discarding Changes Made By Filesystem Entity Managers
+The entity managers cache of changes can be discarded if they are not required. All changes held in the entity managers cache of changes are discarded and all locks held by the entity manager are released.
+
+All objects attached to the entity manager are detached and all references to them should be discarded.
+
+When an entity manager is closed by calling the `close()` method the entity manager is automatically rolled back and all uncommitted changes are discarded.
+
+When the last reference to an entity manager is removed from the JVM the entity manager is automatically closed and changes managed by it are automatically rolled back.
+
+When the entity manager factory is shutdown all open entity managers created by that entity manager factory are automatically closed, and their changes rolled back.
 
 
 
