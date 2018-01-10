@@ -425,6 +425,24 @@ All changes to objects made by entity managers are cached until the `commit()` m
 When the entity manager commits its changes the saved version of object resources are moved from the entity managers working directory to the repository, resources for deleted entities are removed from the repository and file locks held by the entity manager are released.
 
 After an entity manager has committed its changes the entity managers working directory will be empty as will the cache of changes held by the entity manager.  Consequently once a change has been committed in the entity manager the change cannot automatically be undone.
+
+The example below shows committing changes made by an entity manager.
+```java
+FilesystemEntityManager fem = femf.entityManager();
+
+Foo fetchedFoo = fem.fetch(Foo.class, "fetchedFoo");
+fem.delete(fetchedFoo);
+
+Foo newFoo = new Foo();
+foo.setId("newFoo");
+foo = fem.save(foo);
+
+fem.commit();
+
+fem.close();
+```
+The above example deletes the `Foo` "fetchedFoo" and saves the `Foo` "newFoo" and commits the changes to the repository
+
  
 ### Discarding Changes Made By Filesystem Entity Managers
 The entity managers cache of changes can be discarded if they are not required. All changes held in the entity managers cache of changes are discarded and all locks held by the entity manager are released.
@@ -437,5 +455,21 @@ When the last reference to an entity manager is removed from the JVM the entity 
 
 When the entity manager factory is shutdown all open entity managers created by that entity manager factory are automatically closed, and their changes rolled back.
 
+The example below shows rolling back changes made by an entity manager.
+```java
+FilesystemEntityManager fem = femf.entityManager();
+
+Foo fetchedFoo = fem.fetch(Foo.class, "fetchedFoo");
+fem.delete(fetchedFoo);
+
+Foo newFoo = new Foo();
+foo.setId("newFoo");
+foo = fem.save(foo);
+
+fem.rollback();
+
+fem.close();
+```
+The above example makes no changes to the repository
 
 
