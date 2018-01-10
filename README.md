@@ -331,16 +331,16 @@ Gson gson = femf.gson();
 ```
 The `Gson` implementation used by the entity managers can be changed as shown below
 ```java
-fenf.gson(new GsonBuilder()
+femf.gson(new GsonBuilder()
 				.registerTypeAdapter(FemWrapper.class, new FemWrapperDeserializer(femf.localType()))
 				.create());
 ```
-**Note** The if OCN wrappers are used to wrap objects with an Object Change Number (The default behaviour) the `Gson` implementation must be created with a type adapter to correctly deserialize the generic class `FemWrapper`. The method `localType()` of the entity manager factory returns a ThreadLocal<Type> variable that is populated with the expected type of the wrapped object for the tread that is deserializing the wrapper.
+**Note** If OCN wrappers are used to wrap objects with an Object Change Number (The default behaviour) the `Gson` implementation must be created with a type adapter to correctly deserialize the generic class `FemWrapper`. The method `localType()` of the entity manager factory returns a ThreadLocal<Type> variable that is populated with the expected type of the wrapped object for the thread that is deserializing the wrapper.
 
 #### Writing Classes To Be Saved As XML
 Full details of how to write classes to be serialized using JAXB can be found [here](https://docs.oracle.com/javase/8/docs/technotes/guides/xml/jaxb/index.html)
 
-The example below shows a class to be serialised by `Gson`
+The example below shows a class to be serialised by `JAXB`
 ```java
 @XmlRootElement(name = "foo")
 public class XmlFoo implements Id<XmlFoo, String> {
