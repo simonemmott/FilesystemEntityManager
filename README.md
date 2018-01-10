@@ -281,6 +281,7 @@ Note the use of the `configure()` method. This is required since the configurati
 
 ##### Data Formats
 Data formats define the syntax of the files used to store instance data.
+
 | Data Format           | Description |
 |-----------------------|-------------|
 | `FemDataFormat.JSON ` | The instances persistent data is stored in Javascript Object Notation |
@@ -289,7 +290,7 @@ Data formats define the syntax of the files used to store instance data.
 ##### Data Structures
 When persistent instance data is stored on the file system it can optionally be stored with an Object Change Number (OCN). The OCN is used to identify whether the persisted instance data has changed between it being fetched into the entity manager cache and being saved by the entity manager
 
-| Data Format         | Description |
+| Data Structure      | Description |
 |---------------------|-------------|
 | `FemDataFormat.OCN` | The instances persistent data is stored wrapped in an object with an Integer OCN value |
 | `FemDataFormat.RAW` | The instances persistent data is stored without an OCN value. In this case the files MD5 hash is used to identify whether the object has been changed beween being fetching into the entity manager cache and be saved by the entity manager |
