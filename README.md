@@ -1,7 +1,7 @@
 # FilesystemEntityManager
 The file system entity manager provides a simplified API for persisting instances of objects on the file system as JSON or XML documents
 
-The objects are serialized and deserialised using Gson and JAXB dependent on the configuration set for the class being persisted.
+The objects are serialized and deserialized using Gson and JAXB dependent on the configuration set for the class being persisted.
 
 The file system entity manager uses the java FileLock API to manage concurrency issues over updating the persisted data of object instances
 Locking of entities is handled in an optimistic write style. This behaviour cannot be configured and allows two entity managers to change the same object. The first one to `save(...)` the object will obtain a write lock on the object with the second entity managers call to `save(...)` throwing a `FemObjctLockedException`. The lock is released when the entity manager is committed or rolled back using the `commit()` or `rollback()` methods.
@@ -215,7 +215,7 @@ The `fem.conf` file is in JSON format and can therefore be edited manually. Alte
 #### Systematic Configuration of Storage Parameters
 Configuration that applies to all of the classes managed by file system entity managers are set by calling methods directly on the instance of `FemConfig` returned by the call to `config()` on the entity manager factory instance.
 
-All these examples are based on an entity manager factoy created with the following java
+All these examples are based on an entity manager factory created with the following java
 ```java
 femf = FilesystemEntityManagerFactory.startup(new File("example/new/femf"));
 ```
@@ -226,7 +226,7 @@ Configuration that can be applied to all classes managed by entity managers are 
 | Method | Description |
 |--------|-------------|
 | `dataFormat(FemDataFormat)` | This method sets the default data format of classes persisted by entity managers created by this entity manager factory. The list of possible data formats is listed below. |
-| `setRepo(String, File)`     | This method set the location of the repository identifies by the String alias |
+| `setRepo(String, File)`     | This method set the location of the repository identified by the String alias |
 | `setDefaultRepo(File)`      | This method set the location of the default repository |
 
 The examples below shows setting configuration that is applied to all classes managed by entity managers.
@@ -269,9 +269,10 @@ femf.config().objectConfig(Foo.class);
 ```
 Since `JSON` and `OCN` are the default values for the data format and data structure respectively.
 
-The following example sets the data format to `XML` the data structure to `RAW` and to use the repository with the alias `"custom"` for the class `Too`.
+The following example sets the data format to `XML`, the data structure to `RAW`, the location within the repository to `"Too"` and to use the repository with the alias `"custom"` for the class `Too`.
 ```java
 femf.config().objectConfig(Too.class)
+	.dataFormat(FemDataFormat.XML)
 	.dataStructure(FemDataStructure.RAW)
 	.resourcePath(Too.class.getSimpleName())
 	.repository("custom")
@@ -294,6 +295,112 @@ When persistent instance data is stored on the file system it can optionally be 
 |---------------------|-------------|
 | `FemDataFormat.OCN` | The instances persistent data is stored wrapped in an object with an Integer OCN value |
 | `FemDataFormat.RAW` | The instances persistent data is stored without an OCN value. In this case the files MD5 hash is used to identify whether the object has been changed beween being fetching into the entity manager cache and be saved by the entity manager |
+
+### Writing Classes To Be Stored By Filesysytem Entity Managers
+
+Classes can be written in either `JSON` or `XML` and are written by the Gson and JAXB API's respectively. Consequently the classes need o be annotated correctly with the `Gson` or `JAXB` annotations. In order to identity an instance of a class it must be possible to identify the primary key of the class. The instance data is stored in a file named `<key>.json` or `<key>.xml` where `<key>` is the string representation of the `Serializable` value returned by `IdenitityUtil.getId(...)` for the object. 
+
+#### Writing Classes To Be Saved As JSON
+Full details of how to write classes to be serialized using Gson can be found [here](https://github.com/google/gson/blob/master/UserGuide.md)
+
+The example below shows a class to be serialised by `Gson`
+```java
+public class Foo implements Id<Foo, String> {
+	
+	@Expose String id;
+	@Expose Integer sequence;
+	@Expose String description;
+	@Expose Set<Bar> bars;
+	
+	public String getId() { return id; }
+	public Foo setId(Serializable key) {
+		id = (String) key;
+		return this;
+	}
+}
+```
+**Note** The above class implements the `Id` interface to allow `IdentityUtil` to extract the id of the classes instances. Alternatively the `javax.persistence.Id` annotation can be used instead or you can rely on `IdentiyUtil` to use reflection to identity a `Serializable` field named id.
+
+##### Customizing The Gson Implementation
+
+By default the Gson implementation used by the file system entity manager excludes fields without the `@Expose` annotation. The `Gson` implementation used by FilesystemEntityManager can be accessed through the `gson()` method of the entity manager factory.
+
+e.g.
+```java
+Gson gson = femf.gson();
+```
+The `Gson` implementation used by the entity managers can be changed as shown below
+```java
+fenf.gson(new GsonBuilder()
+				.registerTypeAdapter(FemWrapper.class, new FemWrapperDeserializer(femf.localType()))
+				.create());
+```
+**Note** The if OCN wrappers are used to wrap objects with an Object Change Number (The default behaviour) the `Gson` implementation must be created with a type adapter to correctly deserialize the generic class `FemWrapper`. The method `localType()` of the entity manager factory returns a ThreadLocal<Type> variable that is populated with the expected type of the wrapped object for the tread that is deserializing the wrapper.
+
+#### Writing Classes To Be Saved As XML
+Full details of how to write classes to be serialized using JAXB can be found [here](https://docs.oracle.com/javase/8/docs/technotes/guides/xml/jaxb/index.html)
+
+The example below shows a class to be serialised by `Gson`
+```java
+@XmlRootElement(name = "foo")
+public class XmlFoo implements Id<XmlFoo, String> {
+	
+	String id;
+	Integer sequence;
+	String description;
+	@XmlElementWrapper(name="bars")
+	@XmlElement(name="bar") Set<XmlBar> bars;
+	
+	public String getId() { return id; }
+	public XmlFoo setId(Serializable key) {
+		id = (String) key;
+		return this;
+	}
+}
+```
+**Note** The above class implements the `Id` interface to allow `IdentityUtil` to extract the id of the classes instances. Alternatively the `javax.persistence.Id` annotation can be used instead or you can rely on `IdentiyUtil` to use reflection to identity a `Serializable` field named id.
+
+### Fetching Instances Of Classes Managed By Filesystem Entity Managers
+
+If a class has been configured to be managed by the entity managers then instances of the class can be fetched using the `fetch(Class, Serializable)` method of the entity manager.
+
+The example below shows fetching an instance of the class `Foo` with the `String` id "foo".
+```java
+Foo foo = fem.fetch(Foo.class, "foo");
+```
+If there is no instance of the requested class with the requested id then a null value is returned. Once an instance has been fetched into an entity manager that instance of the class is held in the entity managers cache of attached objects and the same object will be returned by subsequent calls to `fetch(...)` for the same class and Serializable key without accessing the file system. Such an instance is considered to be attached to the entity manager. Objects in the entity managers cache will persist in the cache until the entity manager id closed or until the entity manager is rolled back using the `rollback()` method.
+
+### Savings Instances Of Classes Managed By Filesystem Entity Managers
+
+If a class has been configured to be managed by the entity managers then instances of the class can be saved using the `save(Object)` method of the entity manager.
+
+The example below shows saving an instance of a managed class.
+```java
+Foo foo = new Foo();
+
+foo.setId("newFoo");
+
+foo = fem.save(foo);
+```
+An object that has been saved is held in the entity managers cache of attached objects and is considered to be attached to the entity manager.
+
+If the saved object is not already attached to the entity manager then the object is treated as a new object and will be added to the repository in a new resource. If there is already an object in the repository with the same id value then a checked `FemDuplicateKeyException` is thrown by the call to `save(...)`.
+
+If the saved object is already attached to the entity manager then the object is treated as an existing object and the resource for the object will be updated in the repository. If the object has changed and committed by another entity manager since it was attached to the entity manager that is saving it then a checked `FemMutatedObjectException` is thrown by the call to `save(...)`.
+
+If the saved object is already attached to the entity manager but has been saved by another entity manager then a checked `FemObjectLockedException` is thrown by the call to `save(...)`.
+
+Saving an object does not immediately update the repository. If the object is new then an empty resource is created in the repository and locked using the FileLock API to prevent other entity managers from saving an object with the same id. If the object already exists in the repository then the resource for the object is locked using the FileLock API to prevent other entity managers from saving changes to the object.
+
+The saved object changes are applied to the repository when the `commit()` method of the entity manager is called.
+
+If the changes are no longer required then the `rollback()` method of the entity manager can be called.
+
+### Deleting Instances Of Classes Managed By Filesystem Entity Managers
+
+### Committing Changes Made By Filesystem Entity Managers
+
+### Discarding Changes Made By Filesystem Entity Managers
 
 
 
