@@ -21,7 +21,7 @@
     <dependency>
       <groupId>com.k2</groupId>
       <artifactId>Util</artifactId>
-      <version>0.2.4</version>
+      <version>0.2.5</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
@@ -32,6 +32,12 @@
 	    <groupId>ch.qos.logback</groupId>
 	    <artifactId>logback-classic</artifactId>
 	    <version>1.2.3</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/javax.persistence/javax.persistence-api -->
+	<dependency>
+		<groupId>javax.persistence</groupId>
+		<artifactId>javax.persistence-api</artifactId>
+		<version>2.2</version>
 	</dependency>
     <dependency>
       <groupId>junit</groupId>

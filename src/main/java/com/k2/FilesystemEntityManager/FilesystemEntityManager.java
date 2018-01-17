@@ -14,6 +14,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import javax.persistence.EntityExistsException;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.EntityTransaction;
+import javax.persistence.FlushModeType;
+import javax.persistence.LockModeType;
+import javax.persistence.OptimisticLockException;
+import javax.persistence.Query;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -23,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.Util.FileUtil;
+import com.k2.Util.ObjectUtil;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Identity.IdentityUtil;
 import com.k2.Util.exceptions.FileLockedException;
@@ -67,7 +77,7 @@ import com.k2.Util.exceptions.FileLockedException;
  * @author simon
  *
  */
-public class FilesystemEntityManager {
+public class FilesystemEntityManager implements EntityManager{
 	
 	private enum State {
 		STARTING,
@@ -182,6 +192,19 @@ public class FilesystemEntityManager {
 		Set<Serializable> deletedClasses = deleted.get(cls);
 		if (deletedClasses == null) return false;
 		return deletedClasses.contains(key);
+	}
+	/**
+	 * This method removed the object instance identified by the given class and key from this entity managers map of deleted objects
+	 * 
+	 * @param cls	The class of the object to remove from this entity manager map of deleted objects
+	 * @param key	The key of the object to remove from this entity manager map of deleted objects
+	 */
+	private void clearDeleted(Class<?> cls, Serializable key) {
+		logger.trace("Clearing {}({}) as from the deleted map", cls, key);
+		Set<Serializable> deletedClasses = deleted.get(cls);
+		if (deletedClasses == null) return;
+		deletedClasses.remove(key);
+		if (deletedClasses.isEmpty()) deleted.remove(cls);
 	}
 	/**
 	 * This method removed the object instance identified by the given class and key from this entity managers map of dirty objects
@@ -1047,6 +1070,171 @@ public class FilesystemEntityManager {
 	public void finalize() {
 		close();
 	}
-	
+
+	@Override
+	public void clear() {
+		cache.clear();
+		dirty.clear();
+		deleted.clear();
+	}
+
+	@Override
+	public boolean contains(Object obj) {
+		if (obj == null) return false;
+		// Get the key identifying the object
+		Serializable key;
+		key = IdentityUtil.getId(obj);
+		Object hit = cacheFetch(obj.getClass(), key);
+		return (hit != null);
+	}
+
+	@Override
+	public Query createNamedQuery(String arg0) {
+		throw new FemError("The file system entity manager doesn't support SQL queries");
+	}
+
+	@Override
+	public Query createNativeQuery(String arg0) {
+		throw new FemError("The file system entity manager doesn't support SQL queries");
+	}
+
+	@Override
+	public Query createNativeQuery(String arg0, Class arg1) {
+		throw new FemError("The file system entity manager doesn't support SQL queries");
+	}
+
+	@Override
+	public Query createNativeQuery(String arg0, String arg1) {
+		throw new FemError("The file system entity manager doesn't support SQL queries");
+	}
+
+	@Override
+	public Query createQuery(String arg0) {
+		throw new FemError("The file system entity manager doesn't support SQL queries");
+	}
+
+	@Override
+	public <T> T find(Class<T> cls, Object key) {
+		if (!(key instanceof Serializable)) throw new FemError("The key value '{}' for class '{}' passed to find must be Serializable", key,  cls.getCanonicalName());
+		return fetch(cls, (Serializable)key);
+	}
+
+	@Override
+	public void flush() {
+		// Nothing to do here The file system entity manager flushed all changes to the connections working directory automatically
+	}
+
+	@Override
+	public Object getDelegate() {
+		return (FilesystemEntityManager)this;
+	}
+
+	@Override
+	public FlushModeType getFlushMode() {
+		return FlushModeType.AUTO;
+	}
+
+	@SuppressWarnings("serial")
+	@Override
+	public <T> T getReference(Class<T> cls, Object key) {
+		if (cls == null) throw new FemError("A class must be provided to getReference()");
+		if (key == null) throw new FemError("A key must be provided to getReference()");
+		if (!(key instanceof Serializable)) throw new FemError("The key value '{}' for class '{}' passed to getReference must be Serializable", key,  cls.getCanonicalName());
+		T obj = fetch(cls, (Serializable) key);
+		if (obj == null) throw new EntityNotFoundException(StringUtil.replaceAll("Unable to identify an instance of {}({})", "{}", cls.getCanonicalName(), key)) {};
+		return obj;
+	}
+
+	@Override
+	public EntityTransaction getTransaction() {
+		// TODO Implement getTransacion()
+		throw new FemError("The method FilesystemEntityManager.getTransaction() is not implemented");
+	}
+
+	@Override
+	public boolean isOpen() {
+		return (state == State.OPEN);
+	}
+
+	@Override
+	public void joinTransaction() {
+		// TODO Implement joinTransaction()
+		throw new FemError("The method FilesystemEntityManager.joinTransaction() is not implemented");
+	}
+
+	@Override
+	public void lock(Object obj, LockModeType lockMode) {
+		if (obj == null || lockMode == null) return;
+		// Get the key identifying the object
+		Serializable key;
+		key = IdentityUtil.getId(obj);
+		if (key == null) throw new FemError("Unable to identify key for '{}' during lock", obj);
+		if (lockMode == LockModeType.READ) logger.warn("FilesystemEntityManager does not support read locking. The resource will be locked with a write lock instead");
+		try {
+			lockInRepo(obj.getClass(), key);
+		} catch (FemObjectLockedException e) {
+			throw new OptimisticLockException(e);
+		}
+	}
+
+	@Override
+	public <T> T merge(T obj) {
+		try {
+			return save(obj);
+		} catch (FemObjectLockedException e) {
+			throw new OptimisticLockException(e);
+		} catch (FemDuplicateKeyException e) {
+			throw new EntityExistsException(e);
+		} catch (FemMutatedObjectException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	@Override
+	public void persist(Object obj) {
+		try {
+			save(obj);
+		} catch (FemObjectLockedException e) {
+			throw new OptimisticLockException(e);
+		} catch (FemDuplicateKeyException e) {
+			throw new EntityExistsException(e);
+		} catch (FemMutatedObjectException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	@Override
+	public void refresh(Object obj) {
+		if (obj == null) return;
+		// Get the key identifying the object
+		Serializable key;
+		key = IdentityUtil.getId(obj);
+		
+		clearDirty(obj.getClass(), key);
+		clearDeleted(obj.getClass(), key);
+		clearCache(obj.getClass(), key);
+		
+		Object refresh = fetch(obj.getClass(), key);
+		
+		ObjectUtil.copy(refresh, obj);
+		
+	}
+
+	@Override
+	public void remove(Object obj) {
+		try {
+			delete(obj);
+		} catch (FemObjectLockedException e) {
+			throw new OptimisticLockException(e);
+		}
+		
+	}
+
+	@Override
+	public void setFlushMode(FlushModeType arg0) {
+		logger.warn("The file system entity manager does not support alternaive flush modes. The flush mode {} is used", FlushModeType.AUTO);
+	}
+
+
 
 }
