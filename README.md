@@ -1,7 +1,9 @@
-# FilesystemEntityManager
+# FilesystemEntityManager 0.1.1
 The file system entity manager provides a simplified API for persisting instances of objects on the file system as JSON or XML documents
 
 The objects are serialized and deserialized using Gson and JAXB dependent on the configuration set for the class being persisted.
+
+The FilesystemEntityManager also implements the `javax.persistence.EntityManager` interface and the FilesystemEntityManagerFactory implements the `javax.persistence.EntityManagerFactory` interface.
 
 The file system entity manager uses the java FileLock API to manage concurrency issues over updating the persisted data of object instances
 Locking of entities is handled in an optimistic write style. This behaviour cannot be configured and allows two entity managers to change the same object. The first one to `save(...)` the object will obtain a write lock on the object with the second entity managers call to `save(...)` throwing a `FemObjctLockedException`. The lock is released when the entity manager is committed or rolled back using the `commit()` or `rollback()` methods.

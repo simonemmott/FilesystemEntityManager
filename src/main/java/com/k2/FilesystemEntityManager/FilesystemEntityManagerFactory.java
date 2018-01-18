@@ -12,6 +12,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +47,34 @@ import com.k2.Util.FileUtil;
  * @author simon
  *
  */
-public class FilesystemEntityManagerFactory {
+public class FilesystemEntityManagerFactory implements EntityManagerFactory{
+	
+	public enum State {
+		STARTING,
+		OPEN,
+		CLOSING,
+		CLOSED;
+	}
+	
+	private State state = State.STARTING;
+	
+	private synchronized void setState(State state) { 
+		switch(this.state) {
+		case CLOSED:
+			throw new FemError("Invalid state transition");
+		case CLOSING:
+			if (state == State.CLOSED) this.state = state; else throw new FemError("Invalid state transition");
+			break;
+		case OPEN:
+			if (state == State.CLOSING) this.state = state; else throw new FemError("Invalid state transition");
+			break;
+		case STARTING:
+			if (state == State.OPEN) this.state = state; else throw new FemError("Invalid state transition");
+			break;
+		default:
+			throw new FemError("Invalid state transition");
+		}
+	}
 	
 	public static final String CONF = "fem.conf";
 	public static final String JSON = ".json";
@@ -83,6 +113,8 @@ public class FilesystemEntityManagerFactory {
 		
 		File confFile = FileUtil.fetch(managerDir, CONF);
 		if (confFile != null) readConfig(confFile);
+		
+		setState(State.OPEN);
 		
 	}
 	
@@ -131,6 +163,7 @@ public class FilesystemEntityManagerFactory {
 	 * @return	This entity manager factory for method chaining
 	 */
 	public FilesystemEntityManagerFactory configure(FemConfig config) {
+		if (!isOpen()) throw new FemError("The entity manager factory is not open");
 		this.config = config;
 		config.configure();
 		return this;
@@ -141,6 +174,7 @@ public class FilesystemEntityManagerFactory {
 	 * @return	The configuration for this entity manager factory
 	 */
 	public FemConfig config() { 
+		if (!isOpen()) throw new FemError("The entity manager factory is not open");
 		if (config == null) config = new FemConfig(this);
 		return config; 
 	}
@@ -153,7 +187,10 @@ public class FilesystemEntityManagerFactory {
 	 * This method returns the ThreadLocal variable to pass configuration to Gson
 	 * @return	The ThreadLocal&lt;Type&gt; variable used to passs configuration to Gson during deserialization 
 	 */
-	public LocalType localType() { return localType; }
+	public LocalType localType() { 
+		if (!isOpen()) throw new FemError("The entity manager factory is not open");
+		return localType; 
+	}
 	/**
 	 * The Gson instance used to read and write the entity manager factories configuration file
 	 */
@@ -168,6 +205,7 @@ public class FilesystemEntityManagerFactory {
 	 * instance doesn't exist then a new one is created automcatically
 	 */
 	public Gson gson() { 
+		if (!isOpen()) throw new FemError("The entity manager factory is not open");
 		if (gson == null) gson = new GsonBuilder()
 									.setPrettyPrinting()
 									.excludeFieldsWithoutExposeAnnotation()
@@ -181,6 +219,7 @@ public class FilesystemEntityManagerFactory {
 	 * @return	This entity manager factory for instance chaining.
 	 */
 	public FilesystemEntityManagerFactory gson(Gson gson) {
+		if (!isOpen()) throw new FemError("The entity manager factory is not open");
 		this.gson = gson;
 		return this;
 	}
@@ -190,6 +229,7 @@ public class FilesystemEntityManagerFactory {
 	 * @return	A new entity manager able to manage entities of classes configured in this entity managers factory configuration
 	 */
 	public FilesystemEntityManager entityManager() {
+		if (!isOpen()) throw new FemError("Unable to create entity manager the current state is {}", state);
 		FilesystemEntityManager em = new FilesystemEntityManager(this);
 		connections.put(em.getId(), em);
 		return em;
@@ -213,6 +253,7 @@ public class FilesystemEntityManagerFactory {
 	 * This is done automatically when the entity manager factory is shut down
 	 */
 	public void saveConfig() {
+		if (state == State.CLOSED || state == State.STARTING) throw new FemError("Unable to save config the current state is {}", state);
 		File configFile = new File(managerDir.getAbsolutePath()+File.separatorChar+CONF);
 		if (configFile.exists()) configFile.delete();
 		try {
@@ -228,14 +269,18 @@ public class FilesystemEntityManagerFactory {
 	 * This method shuts down this entity manager factory. All connections currently active created by this entity manager
 	 * factory are automatically rolled back and closed
 	 */
-	public void shutdown() {
-		Set<FilesystemEntityManager> connsToClose = new HashSet<FilesystemEntityManager>();
-		for (FilesystemEntityManager fem : connections.values()) connsToClose.add(fem);
-		for (FilesystemEntityManager fem : connsToClose) { 
-			fem.rollback(); 
-			fem.close(); 
+	public synchronized  void shutdown() {
+		if (state == State.OPEN) {
+			setState(State.CLOSING);
+			Set<FilesystemEntityManager> connsToClose = new HashSet<FilesystemEntityManager>();
+			for (FilesystemEntityManager fem : connections.values()) connsToClose.add(fem);
+			for (FilesystemEntityManager fem : connsToClose) { 
+				fem.rollback(); 
+				fem.close(); 
+			}
+			saveConfig();
+			setState(State.CLOSED);
 		}
-		saveConfig();
 	}
 	/**
 	 * This method is called by the entity manager when it closes.
@@ -244,6 +289,30 @@ public class FilesystemEntityManagerFactory {
 	 */
 	void closed(FilesystemEntityManager fem) {
 		connections.remove(fem.getId());
+	}
+
+	@Override
+	public void close() {
+		if (!isOpen()) throw new FemError("Unable to close the entity manager factory current state is {}", state);
+		shutdown();
+		
+	}
+
+	@Override
+	public EntityManager createEntityManager() {
+		if (!isOpen()) throw new FemError("Unable to create entity manager the current state is {}", state);
+		return entityManager();
+	}
+
+	@Override
+	public EntityManager createEntityManager(@SuppressWarnings("rawtypes") Map arg0) {
+		if (!isOpen()) throw new FemError("Unable to create entity manager the current state is {}", state);
+		return entityManager();
+	}
+
+	@Override
+	public boolean isOpen() {
+		return (state == State.OPEN);
 	}
 
 	
