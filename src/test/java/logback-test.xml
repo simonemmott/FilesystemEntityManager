@@ -8,8 +8,9 @@
     </encoder>
   </appender>
 
-  <!-- <logger name="com.k2.FilesystemEntityManager.FemTestClient" level="off"/> -->
-  <root level="trace">
+  <logger name="com.k2.FilesystemEntityManager.metamodel" level="off"/>
+  <logger name="com.k2.FilesystemEntityManager.criteria" level="trace"/>
+  <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

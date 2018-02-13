@@ -10,19 +10,32 @@ import java.lang.invoke.MethodHandles;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import static java.nio.file.StandardCopyOption.*;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.EntityExistsException;
+import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.EntityTransaction;
 import javax.persistence.FlushModeType;
 import javax.persistence.LockModeType;
 import javax.persistence.OptimisticLockException;
+import javax.persistence.PersistenceException;
 import javax.persistence.Query;
+import javax.persistence.StoredProcedureQuery;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.metamodel.Metamodel;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -31,6 +44,8 @@ import javax.xml.bind.Unmarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.k2.FilesystemEntityManager.criteria.FemCriteriaQuery;
+import com.k2.FilesystemEntityManager.criteria.FemTypedQuery;
 import com.k2.Util.FileUtil;
 import com.k2.Util.ObjectUtil;
 import com.k2.Util.StringUtil;
@@ -91,7 +106,7 @@ public class FilesystemEntityManager implements EntityManager{
 	/**
 	 * The file system entity manager factory that created this instance
 	 */
-	private FilesystemEntityManagerFactory femFactory;
+	private FilesystemEntityManagerFactory femf;
 	/**
 	 * The id of this entity manager within the file system entity manager factory
 	 */
@@ -132,7 +147,7 @@ public class FilesystemEntityManager implements EntityManager{
 	 */
 	FilesystemEntityManager(FilesystemEntityManagerFactory femFactory) {
 		logger.trace("Creating new entity manager for factory on '{}'", femFactory.managerDictoryLocation());
-		this.femFactory = femFactory;
+		this.femf = femFactory;
 		
 		id = StringUtil.random(12);
 		workingDir = new File(femFactory.connectionsDir().getAbsolutePath()+File.separatorChar+id);
@@ -352,9 +367,9 @@ public class FilesystemEntityManager implements EntityManager{
 	private File objResource(File resourceLocation, FemDataFormat dataFormat, Class<?> cls, Serializable key) {
 		switch(dataFormat) {
 		case JSON:
-			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+key+FilesystemEntityManagerFactory.JSON);
+			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+IdentityUtil.toString(key)+FilesystemEntityManagerFactory.JSON);
 		case XML:
-			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+key+FilesystemEntityManagerFactory.XML);
+			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+IdentityUtil.toString(key)+FilesystemEntityManagerFactory.XML);
 		default:
 			throw new FemError("Unsupported data format: "+dataFormat+" fetching '"+cls.getCanonicalName()+"("+key+")'");
 		}
@@ -406,7 +421,7 @@ public class FilesystemEntityManager implements EntityManager{
 	 */
 	private FemDataFormat dataFormat(FemObjectConfig conf) {
 		if (conf.dataFormat() == null) {
-			return femFactory.config().dataFormat();
+			return femf.config().dataFormat();
 		} else {
 			return conf.dataFormat();
 		}
@@ -417,7 +432,7 @@ public class FilesystemEntityManager implements EntityManager{
 	 * @return	An instance of File representing the directory in which an objects instance data will be/is saved as a file. 
 	 */
 	private File repoLocation(FemObjectConfig conf) {
-		File repo = femFactory.repository(conf.repository());
+		File repo = femf.repository(conf.repository());
 		File repoLocation = new File(repo.getAbsolutePath()+File.separatorChar+conf.resourcePath());
 		return repoLocation;
 	}
@@ -454,7 +469,7 @@ public class FilesystemEntityManager implements EntityManager{
 	 * FemError is thrown
 	 */
 	private FemObjectConfig checkConfig(Class<?> cls) {
-		FemObjectConfig objConf = femFactory.config().getObjectConfig(cls);
+		FemObjectConfig objConf = femf.config().getObjectConfig(cls);
 		if (objConf == null) throw new FemError("The file system entity manager has not been configured to handle instances of the class '"+cls.getCanonicalName()+"'");
 		return objConf;
 	}
@@ -603,10 +618,10 @@ public class FilesystemEntityManager implements EntityManager{
 	
 		switch(objDataFormat) {
 		case JSON:
-			wrappedOcn = femFactory.gson().fromJson(objReader, FemOcn.class);
+			wrappedOcn = femf.gson().fromJson(objReader, FemOcn.class);
 			break;
 		case XML:
-			JAXBContext ctx = femFactory.config().getJaxbContext(cls);
+			JAXBContext ctx = femf.config().getJaxbContext(cls);
 			try {
 				Unmarshaller um = ctx.createUnmarshaller();
 				wrappedOcn = (FemOcn)um.unmarshal(objReader);
@@ -660,8 +675,21 @@ public class FilesystemEntityManager implements EntityManager{
 	 * @return	The instance of the given class with the given key. If the class and key do not identify a persisted instance of the given
 	 * class a null is returned
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> T fetch(Class<T> cls, Serializable key) {
+		return fetch(cls, key, null);
+	}
+	/**
+	 * This method fetches the persisted data for the given class and key
+	 * 
+	 * @param cls	The class of the object to fetch
+	 * @param key	The key identifying the object to fetch
+	 * @param qry	The typed query to compare to the fetched object if the object does not pass the query then null is returned and the object is not cached
+	 * @param <T>	The type of the object to fetch
+	 * @return	The instance of the given class with the given key. If the class and key do not identify a persisted instance of the given
+	 * class a null is returned
+	 */
+	@SuppressWarnings("unchecked")
+	private <T> T fetch(Class<T> cls, Serializable key, FemTypedQuery<T> qry) {
 		if (state != State.OPEN) throw new FemError("Unable to fetch on a connection that is {}", state); 
 		if (cls == null) return null;
 		if (key == null) return null;
@@ -670,6 +698,10 @@ public class FilesystemEntityManager implements EntityManager{
 
 		// Check this class is configured to be managed by this entity manager and get the storage configuration if it is
 		FemObjectConfig objConf = checkConfig(cls);
+		
+		if (objConf.isExposedEntity()) {
+			return fetchExposedEntity(cls, key, qry);
+		}
 
 		// If this object has been deleted in this entity manager return null
 		if (isDeleted(cls, key)) {
@@ -711,12 +743,12 @@ public class FilesystemEntityManager implements EntityManager{
 		case OCN:
 			switch(objDataFormat) {
 			case JSON:
-				femFactory.localType().set(cls);
-				wrappedObj = femFactory.gson().fromJson(objReader, FemWrapper.class);
-				femFactory.localType().remove();
+				femf.localType().set(cls);
+				wrappedObj = femf.gson().fromJson(objReader, FemWrapper.class);
+				femf.localType().remove();
 				break;
 			case XML:
-				JAXBContext ctx = femFactory.config().getJaxbContext(cls);
+				JAXBContext ctx = femf.config().getJaxbContext(cls);
 				try {
 					Unmarshaller um = ctx.createUnmarshaller();
 					wrappedObj = (FemWrapper<T>)um.unmarshal(objReader);
@@ -729,10 +761,10 @@ public class FilesystemEntityManager implements EntityManager{
 		case RAW:
 			switch(objDataFormat) {
 			case JSON:
-				wrappedObj = new FemWrapper<T>(femFactory.gson().fromJson(objReader, cls));
+				wrappedObj = new FemWrapper<T>(femf.gson().fromJson(objReader, cls));
 				break;
 			case XML:
-				JAXBContext ctx = femFactory.config().getJaxbContext(cls);
+				JAXBContext ctx = femf.config().getJaxbContext(cls);
 				try {
 					Unmarshaller um = ctx.createUnmarshaller();
 					wrappedObj = new FemWrapper<T>((T)um.unmarshal(objReader));
@@ -757,12 +789,60 @@ public class FilesystemEntityManager implements EntityManager{
 			logger.trace("not found: {}({})", cls, key);
 			return null;
 		}
-		// Add the fetched and wrapped instance to this entity managers cache of attachd objects
-		cache(cls, key, wrappedObj);
+		if (qry == null || qry.queryMatch(wrappedObj.obj)) {
+			// Add the fetched and wrapped instance to this entity managers cache of attached objects
+			cache(cls, key, wrappedObj);
+			
+			// Return the object fetched from the repository
+			logger.trace("found: {}({})", cls, key);
+			return wrappedObj.obj;
+		} else {
+			return null;
+		}
 		
-		// Return the object fetched from the repository
-		logger.trace("found: {}({})", cls, key);
-		return wrappedObj.obj;
+	}
+
+	/**
+	 * This method extracts an instance of the given class from its root instance for the given key and query
+	 * @param cls	The class of the entity to fetch
+	 * @param key	The key of the entity to fetch
+	 * @param qry	An optional typed query to apply to the fetched instance. The fetched instance is only returned if this parameter is 
+	 *              not null if the instance passes the query.
+	 * @return		The instance of the requested class and key if it exists in the classes root instance and it passes the optional query
+	 */
+	private <T> T fetchExposedEntity(Class<T> cls, Serializable key, FemTypedQuery<T> qry) {
+		
+		logger.debug("fetchExposdEntity: {}({})", cls, key);
+
+		// Check this class is configured to be managed by this entity manager and get the storage configuration if it is
+		FemObjectConfig objConf = checkConfig(cls);
+		
+		Class<?> rootCls = objConf.getRootClass();
+		if (rootCls.equals(cls)) throw new FemError("Unable to identify root class for class '{}'", cls.getCanonicalName());
+		
+		Serializable rootKey = KeyUtil.getRootKey(key);
+		
+		Object rootObj = fetch(rootCls, rootKey);
+		
+		if (rootObj == null) {
+			return null;
+		}
+		
+		List<T> embeddedObjects = ObjectUtil.getObjectsAt(rootObj, objConf.getEmbeddedPath(), cls);
+		
+		for (T embeddedObject : embeddedObjects) {
+			Serializable embeddedKey = IdentityUtil.getId(embeddedObject);
+			if (embeddedKey != null && embeddedKey.equals(key)) {
+				if (qry != null) {
+					if (qry.queryMatch(embeddedObject)) return embeddedObject;
+					return null;
+				} else {
+					return embeddedObject;
+				}
+			}
+		}
+		
+		return null;
 		
 	}
 
@@ -791,7 +871,13 @@ public class FilesystemEntityManager implements EntityManager{
 		// Check that this objects class has been configured to be persisted by by this entity manager and fetch the storage configuration
 		// for the class of the object to save
 		FemObjectConfig objConf = checkConfig(obj.getClass());
-		
+
+		// If this is an exposed entity save it as an exposed entity and return
+		if (objConf.isExposedEntity()) {
+			return saveExposedEntity(obj);
+		}
+
+
 		// Get the data format of the object to save
 		FemDataFormat objDataFormat = dataFormat(objConf);
 		
@@ -875,10 +961,10 @@ public class FilesystemEntityManager implements EntityManager{
 		// Write the objects instance data to this entity managers working directory in the appropriate format using the appropriate marshaller
 		switch(objDataFormat) {
 		case JSON:
-			femFactory.gson().toJson(output, objWriter);
+			femf.gson().toJson(output, objWriter);
 			break;
 		case XML:
-			JAXBContext ctx = femFactory.config().getJaxbContext(obj.getClass());
+			JAXBContext ctx = femf.config().getJaxbContext(obj.getClass());
 			try {
 				Marshaller m = ctx.createMarshaller();
 				m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
@@ -895,6 +981,53 @@ public class FilesystemEntityManager implements EntityManager{
 			throw new FemError("Unable to write to '{}'", e, objWriter);
 		}
 
+		// return the saved object 
+		return obj;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T saveExposedEntity(T obj) throws FemObjectLockedException, FemDuplicateKeyException, FemMutatedObjectException {
+		if (state != State.OPEN) throw new FemError("Unable to save on a connection that is {}", state); 
+		if (obj == null) return null;
+
+		// Get the key identifying the object
+		Serializable key;
+		key = IdentityUtil.getId(obj);
+
+		logger.trace("Save exposed entity {}({})", obj.getClass(), key);
+
+		// Check that this objects class has been configured to be persisted by by this entity manager and fetch the storage configuration
+		// for the class of the object to save
+		FemObjectConfig objConf = checkConfig(obj.getClass());
+
+		Class<?> rootCls = objConf.getRootClass();
+		Serializable rootKey = KeyUtil.getRootKey(key);
+		String rootPath = objConf.getEmbeddedPath();
+		
+		CachedObject<?> cachedRoot = (CachedObject<?>) cacheFetch(rootCls, rootKey);
+		if (cachedRoot == null) throw new FemError("Unable to save an embedded entity if it's root entity is not attached to the entity manager");
+		
+		Object rootObj = cachedRoot.wrappedObj.obj;
+		
+		List<T> embeddedObjects = (List<T>) ObjectUtil.getObjectsAt(rootObj, rootPath, obj.getClass());
+		
+		boolean matched = false;
+		if (!embeddedObjects.contains(obj)) {
+			for (T t : embeddedObjects) {
+				Serializable tKey = IdentityUtil.getId(t);
+				if (key.equals(tKey)) {
+					ObjectUtil.copy(obj, t);
+					matched = true;
+					break;
+				}
+			}
+			if (!matched) {
+				ObjectUtil.putObjectAt(rootObj, rootPath, obj);
+			}
+		}
+		
+		save(rootObj);
+		
 		// return the saved object 
 		return obj;
 	}
@@ -916,6 +1049,11 @@ public class FilesystemEntityManager implements EntityManager{
 		@SuppressWarnings("unused")
 		FemObjectConfig objConf = checkConfig(obj.getClass());
 				
+		// If this is an exposed entity delete it as an exposed entity and return
+		if (objConf.isExposedEntity()) {
+			return deleteExposedEntity(obj);
+		}
+
 		// Get the key identifying the object
 		Serializable key;
 		key = IdentityUtil.getId(obj);
@@ -943,6 +1081,44 @@ public class FilesystemEntityManager implements EntityManager{
 		
 		// Return the object that has been deleted
 		return obj;
+	}
+	
+	private <T> T deleteExposedEntity(T obj) throws FemObjectLockedException {
+		if (state != State.OPEN) throw new FemError("Unable to delete on a connection that is {}", state); 
+		if (obj == null) return null;
+		
+		// Check that this objects class has been configured to be persisted by by this entity manager and fetch the storage configuration
+		// for the class of the object to save
+		@SuppressWarnings("unused")
+		FemObjectConfig objConf = checkConfig(obj.getClass());
+				
+		// Get the key identifying the object
+		Serializable key;
+		key = IdentityUtil.getId(obj);
+		
+		Class<?> rootCls = objConf.getRootClass();
+		Serializable rootKey = KeyUtil.getRootKey(key);
+		String rootPath = objConf.getEmbeddedPath();
+
+		CachedObject<?> cachedRoot = (CachedObject<?>) cacheFetch(rootCls, rootKey);
+		if (cachedRoot == null) throw new FemError("Unable to save an embedded entity if it's root entity is not attached to the entity manager");
+		
+		Object rootObj = cachedRoot.wrappedObj.obj;
+		
+		ObjectUtil.deleteObjectAt(rootObj, rootPath, obj);
+		
+		try {
+			save(rootObj);
+		} catch (FemDuplicateKeyException | FemMutatedObjectException e) {
+			throw new FemObjectLockedException(rootCls, rootKey, repoLocation(checkConfig(rootCls)));
+		}
+		
+		// Identity this object as deleted in this entity manager
+		markDeleted(obj.getClass(), key);
+
+		// return the deleted object 
+		return obj;
+		
 	}
 	
 	/**
@@ -1058,7 +1234,7 @@ public class FilesystemEntityManager implements EntityManager{
 
 			state = State.CLOSING;
 			FileUtil.deleteCascade(workingDir);
-			femFactory.closed(this);
+			femf.closed(this);
 			state = State.CLOSED;
 		}
 		
@@ -1090,33 +1266,49 @@ public class FilesystemEntityManager implements EntityManager{
 
 	@Override
 	public Query createNamedQuery(String arg0) {
-		throw new FemError("The file system entity manager doesn't support SQL queries");
+		throw new FemError("The file system entity manager doesn't support JPQL queries");
 	}
 
 	@Override
 	public Query createNativeQuery(String arg0) {
-		throw new FemError("The file system entity manager doesn't support SQL queries");
+		throw new FemError("The file system entity manager doesn't support JPQL queries");
 	}
 
 	@Override
 	public Query createNativeQuery(String arg0, Class arg1) {
-		throw new FemError("The file system entity manager doesn't support SQL queries");
+		throw new FemError("The file system entity manager doesn't support JPQL queries");
 	}
 
 	@Override
 	public Query createNativeQuery(String arg0, String arg1) {
-		throw new FemError("The file system entity manager doesn't support SQL queries");
+		throw new FemError("The file system entity manager doesn't support JPQL queries");
 	}
 
 	@Override
 	public Query createQuery(String arg0) {
-		throw new FemError("The file system entity manager doesn't support SQL queries");
+		throw new FemError("The file system entity manager doesn't support JPQL queries");
 	}
 
 	@Override
 	public <T> T find(Class<T> cls, Object key) {
 		if (!(key instanceof Serializable)) throw new FemError("The key value '{}' for class '{}' passed to find must be Serializable", key,  cls.getCanonicalName());
 		return fetch(cls, (Serializable)key);
+	}
+
+	@Override
+	public <T> T find(Class<T> arg0, Object arg1, Map<String, Object> arg2) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public <T> T find(Class<T> cls, Object key, LockModeType arg2) {
+		logger.warn("The only lock mode supported is OPTIMISTIC");
+		return find(cls, key);
+	}
+
+	@Override
+	public <T> T find(Class<T> arg0, Object arg1, LockModeType arg2, Map<String, Object> arg3) {
+		throw new FemError("Method not supported");
 	}
 
 	@Override
@@ -1160,6 +1352,17 @@ public class FilesystemEntityManager implements EntityManager{
 	public void joinTransaction() {
 		// TODO Implement joinTransaction()
 		throw new FemError("The method FilesystemEntityManager.joinTransaction() is not implemented");
+	}
+
+	@Override
+	public boolean isJoinedToTransaction() {
+		// TODO Implement isJoinedToTransaction
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public void lock(Object arg0, LockModeType arg1, Map<String, Object> arg2) {
+		throw new FemError("Method not supported");
 	}
 
 	@Override
@@ -1221,6 +1424,23 @@ public class FilesystemEntityManager implements EntityManager{
 	}
 
 	@Override
+	public void refresh(Object arg0, Map<String, Object> arg1) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public void refresh(Object obj, LockModeType arg1) {
+		logger.warn("Only optimistic locking is supported");
+		refresh(obj);
+		return;
+	}
+
+	@Override
+	public void refresh(Object arg0, LockModeType arg1, Map<String, Object> arg2) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
 	public void remove(Object obj) {
 		try {
 			delete(obj);
@@ -1233,6 +1453,185 @@ public class FilesystemEntityManager implements EntityManager{
 	@Override
 	public void setFlushMode(FlushModeType arg0) {
 		logger.warn("The file system entity manager does not support alternaive flush modes. The flush mode {} is used", FlushModeType.AUTO);
+	}
+
+	@Override
+	public <T> EntityGraph<T> createEntityGraph(Class<T> arg0) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public EntityGraph<?> createEntityGraph(String arg0) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public <T> TypedQuery<T> createNamedQuery(String arg0, Class<T> arg1) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public StoredProcedureQuery createNamedStoredProcedureQuery(String arg0) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public <T> TypedQuery<T> createQuery(CriteriaQuery<T> criteria) {
+		if (!(criteria instanceof FemCriteriaQuery)) throw new FemError("Invalid criteria query implementation. Expected instance of 'FemCriteriaQuery'");
+		FemTypedQuery<T> tQry = new FemTypedQuery<T>(this, (FemCriteriaQuery<T>)criteria);
+		return tQry;
+	}
+
+	@Override
+	public Query createQuery(CriteriaUpdate arg0) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Query createQuery(CriteriaDelete arg0) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public <T> TypedQuery<T> createQuery(String arg0, Class<T> arg1) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public StoredProcedureQuery createStoredProcedureQuery(String arg0) {
+		throw new FemError("Method not supported");
+	}
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public StoredProcedureQuery createStoredProcedureQuery(String arg0, Class... arg1) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public StoredProcedureQuery createStoredProcedureQuery(String arg0, String... arg1) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public void detach(Object obj) {
+		if (obj == null) return;
+		// Get the key identifying the object
+		Serializable key;
+		key = IdentityUtil.getId(obj);
+
+		// Remove this object from this entity managers cache
+		clearCache(obj.getClass(), key);
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		return femf.getCriteriaBuilder();
+	}
+
+	@Override
+	public EntityGraph<?> getEntityGraph(String arg0) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> arg0) {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public EntityManagerFactory getEntityManagerFactory() {
+		return femf;
+	}
+
+	@Override
+	public LockModeType getLockMode(Object arg0) {
+		return LockModeType.OPTIMISTIC;
+	}
+
+	@Override
+	public Metamodel getMetamodel() {
+		throw new FemError("Method not supported");
+	}
+
+	@Override
+	public Map<String, Object> getProperties() {
+		return new HashMap<String, Object>();
+	}
+
+	@Override
+	public void setProperty(String arg0, Object arg1) {
+		throw new FemError("Method not supported");
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T unwrap(Class<T> cls) {
+		if (this.getClass().isAssignableFrom(cls)) return (T)this;
+		throw new PersistenceException(StringUtil.replaceAll("This entity manager is not an instance of {}", "{}", cls.getCanonicalName()));
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Set<T> cacheFetch(Class<T> cls) {
+		Map<Serializable, CachedObject<?>> classCache = cache.get(cls);
+		Set<T> rSet= new HashSet<T>();
+		if (classCache == null) return rSet;
+		for (CachedObject<?> cached : classCache.values()) {
+			rSet.add((T)cached.wrappedObj.obj);
+		}
+		return rSet;
+	}
+
+	public <T> List<T> getResultsList(FemTypedQuery<T> qry) {
+		if (state != State.OPEN) throw new FemError("Unable to get results on a connection that is {}", state); 
+		
+		Set<T> cached = cacheFetch(qry.getResultType());
+		Set<Serializable> keys = getAllCommittedKeys(qry.getResultType());
+		List<T> results = new ArrayList<T>();
+		for (T obj : cached) {
+			// Get the key identifying the object
+			Serializable key;
+			key = IdentityUtil.getId(obj);
+
+			if (!isDeleted(obj.getClass(), key) && qry.queryMatch(obj)) results.add(obj);
+			
+			keys.remove(key);
+		}
+		
+		for (Serializable key : keys) {
+			T obj = fetch(qry.getResultType(), key, qry);
+			if (obj != null) results.add(obj);
+		}
+		
+		return results;
+	}
+	
+	private Set<Serializable> getAllCommittedKeys(Class<?> cls) {
+		Set<Serializable> keys = new HashSet<Serializable>();
+		if (cls == null) return null;
+
+		// Check this class is configured to be managed by this entity manager and get the storage configuration if it is
+		FemObjectConfig objConf = checkConfig(cls);
+		
+		// The object wasn't found in the cache so check the repository
+		File repoLocation = repoLocation(objConf);
+		logger.trace("repo location: '{}'", repoLocation.getAbsolutePath());
+		if (!(repoLocation.exists()&&repoLocation.isDirectory())) {
+			return keys;
+		}
+
+		// Identify the format in which the objects data is stored in the repository
+		FemDataFormat objDataFormat = dataFormat(objConf);
+		
+		for (File f : FileUtil.listForExtension(repoLocation, objDataFormat.getExtention())) {
+			if (f.exists() && f.isFile() && f.length() > 0) {
+				keys.add(IdentityUtil.toKey(IdentityUtil.getIdFieldType(cls), FileUtil.getBasename(f)));
+			}
+		}
+
+		return keys;
 	}
 
 

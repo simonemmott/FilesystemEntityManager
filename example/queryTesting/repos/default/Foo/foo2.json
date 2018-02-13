@@ -1,0 +1,11 @@
+{
+  "obj": {
+    "id": "foo2",
+    "sequence": 2,
+    "description": "This is foo 2",
+    "doubleVal": 2.456,
+    "booleanVal": true,
+    "dateVal": "Jan 12, 1970 11:20:54 AM"
+  },
+  "ocn": 0
+}

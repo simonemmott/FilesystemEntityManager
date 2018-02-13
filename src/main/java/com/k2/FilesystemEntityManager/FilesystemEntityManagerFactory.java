@@ -12,8 +12,16 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cache;
+import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceException;
+import javax.persistence.PersistenceUnitUtil;
+import javax.persistence.Query;
+import javax.persistence.SynchronizationType;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.metamodel.Metamodel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +30,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+import com.k2.FilesystemEntityManager.criteria.FemCriteriaBuilder;
 import com.k2.Util.FileUtil;
+import com.k2.Util.StringUtil;
 /**
  * This class creates instances of file system entity managers.
  * 
@@ -293,26 +303,86 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 
 	@Override
 	public void close() {
-		if (!isOpen()) throw new FemError("Unable to close the entity manager factory current state is {}", state);
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to close the entity manager factory current state is {}", "{}", state));
 		shutdown();
 		
 	}
 
 	@Override
 	public EntityManager createEntityManager() {
-		if (!isOpen()) throw new FemError("Unable to create entity manager the current state is {}", state);
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to create entity manager the current state is {}", "{}", state));
 		return entityManager();
 	}
 
 	@Override
 	public EntityManager createEntityManager(@SuppressWarnings("rawtypes") Map arg0) {
-		if (!isOpen()) throw new FemError("Unable to create entity manager the current state is {}", state);
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to create entity manager the current state is {}", "{}", state));
 		return entityManager();
 	}
 
 	@Override
 	public boolean isOpen() {
 		return (state == State.OPEN);
+	}
+
+	@Override
+	public <T> void addNamedEntityGraph(String arg0, EntityGraph<T> arg1) {
+		throw new FemError("Method not implemented!");
+	}
+
+	@Override
+	public void addNamedQuery(String arg0, Query arg1) {
+		throw new FemError("Method not implemented!");
+	}
+
+	@Override
+	public EntityManager createEntityManager(SynchronizationType arg0) {
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to create entity manager the current state is {}", "{}", state));
+		logger.warn("Filesystem entity manager does not support synchronization types. All entity managers are synchronized");
+		return entityManager();
+	}
+
+	@SuppressWarnings("rawtypes")
+	@Override
+	public EntityManager createEntityManager(SynchronizationType arg0, Map arg1) {
+		if (!isOpen()) throw new FemError("Unable to create entity manager the current state is {}", state);
+		logger.warn("Filesystem entity manager does not support synchronization types. All entity managers are synchronized");
+		return entityManager();
+	}
+
+	@Override
+	public Cache getCache() {
+		return null;
+	}
+
+	@Override
+	public CriteriaBuilder getCriteriaBuilder() {
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get criteria builder. The current state is {}", "{}", state));
+		return new FemCriteriaBuilder(this);
+	}
+
+	@Override
+	public Metamodel getMetamodel() {
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get entity manager factory metamodel. The current state is {}", "{}", state));
+		throw new FemError("Method not implemented!");
+	}
+
+	@Override
+	public PersistenceUnitUtil getPersistenceUnitUtil() {
+		throw new FemError("Method not implemented!");
+	}
+
+	@Override
+	public Map<String, Object> getProperties() {
+		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get entity manager factory properties. The current state is {}", "{}", state));
+		return new HashMap<String, Object>();
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T unwrap(Class<T> cls) {
+		if (this.getClass().isAssignableFrom(cls)) return (T)this;
+		throw new PersistenceException(StringUtil.replaceAll("This entity manager foctory is not an instance of {}", "{}", cls.getCanonicalName()));
 	}
 
 	

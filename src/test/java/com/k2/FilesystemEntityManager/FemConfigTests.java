@@ -51,9 +51,11 @@ public class FemConfigTests {
 		logger.debug("Configuring Foo.class");
 		femf.config().objectConfig(Foo.class)
 			.dataFormat(FemDataFormat.JSON)
-			.dataStructure(FemDataStructure.OCN)
+			.dataStructure(FemDataStructure.RAW)
+			.repository("custom")
 			.configure();
-		
+
+		/*
 		logger.debug("Configuring Bar.class");
 		femf.config().objectConfig(Bar.class)
 			.dataFormat(FemDataFormat.XML)
@@ -66,13 +68,14 @@ public class FemConfigTests {
 			.resourcePath(Too.class.getSimpleName())
 			.repository("custom")
 			.configure();
+		*/
 	
 		logger.info("Saving filesystem entity manager configuration");
 		femf.saveConfig();
 		
 		File config = new File("example/new/femf/fem.conf");
 		assertTrue(config.exists());
-		assertEquals("61e34025928ecf7fcd28c7deb84dc139", Files.hash(config, Hashing.md5()).toString());
+		assertEquals("76679fa81b156ccf2f90de8fbe457b59", Files.hash(config, Hashing.md5()).toString());
 		
         
 		logger.info("Shutting down filesystem entity manager factory");

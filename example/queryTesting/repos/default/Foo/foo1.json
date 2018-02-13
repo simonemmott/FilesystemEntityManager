@@ -1,0 +1,17 @@
+{
+  "obj": {
+    "id": "foo1",
+    "sequence": 1,
+    "description": "This is foo 1",
+    "intVal": 100,
+    "doubleVal": 1.234,
+    "booleanVal": true,
+    "dateVal": "Jan 11, 1970 11:00:00 AM",
+    "too": {
+      "id": "foo1",
+      "name": "Too for foo 1",
+      "description": "This too is foo 1\u0027s too"
+    }
+  },
+  "ocn": 0
+}
