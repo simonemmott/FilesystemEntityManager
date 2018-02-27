@@ -27,6 +27,10 @@ import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SetAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 
+import com.k2.Expressions.exceptions.ExpressionError;
+import com.k2.Expressions.expression.ExprAs;
+import com.k2.Expressions.expression.K2Expression;
+
 public class FemRoot<T> extends FemFrom<T,T> implements Root<T> {
 
 	private Class<T> cls;

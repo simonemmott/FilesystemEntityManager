@@ -8,11 +8,8 @@ import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.metamodel.Attribute;
 
-import com.k2.FilesystemEntityManager.criteria.expression.FemExpression;
-import com.k2.FilesystemEntityManager.criteria.expression.FemPredicate;
-import com.k2.FilesystemEntityManager.criteria.expression.PredicateAnd;
-import com.k2.FilesystemEntityManager.criteria.expression.PredicateIsTrue;
-import com.k2.FilesystemEntityManager.criteria.expression.PredicateTrue;
+import com.k2.Expressions.expression.K2Expression;
+import com.k2.Expressions.predicate.*;
 
 public class FemJoin<R,T> extends FemFrom<R,T> implements Join<R,T> {
 	
@@ -31,15 +28,15 @@ public class FemJoin<R,T> extends FemFrom<R,T> implements Join<R,T> {
 
 	@Override
 	public Join<R, T> on(Expression<Boolean> restriction) {
-		this.predicate = new PredicateIsTrue((FemExpression<Boolean>) restriction);
+		this.predicate = new PredicateIsTrue((K2Expression<Boolean>) restriction);
 		return this;
 	}
 
 	@Override
 	public Join<R, T> on(Predicate... restrictions) {
-		FemPredicate[] femPredicates = new FemPredicate[restrictions.length];
+		K2Predicate[] femPredicates = new K2Predicate[restrictions.length];
 		for (int i=0; i<restrictions.length; i++) {
-			femPredicates[i] = (FemPredicate)restrictions[i];
+			femPredicates[i] = (K2Predicate)restrictions[i];
 		}
 		this.predicate = new PredicateAnd(femPredicates);
 		return this;

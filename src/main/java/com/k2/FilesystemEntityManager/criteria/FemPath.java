@@ -18,11 +18,12 @@ import javax.persistence.metamodel.MapAttribute;
 import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 
+import com.k2.Expressions.Evaluator;
+import com.k2.Expressions.expression.*;
 import com.k2.FilesystemEntityManager.FemError;
-import com.k2.FilesystemEntityManager.criteria.expression.*;
 import com.k2.Util.Identity.IdentityUtil;
 
-public class FemPath<T> extends AbstractExpression<T> implements Path<T>, FemExpression<T> {
+public class FemPath<T> extends AbstractExpression<T> implements Path<T>, K2Expression<T> {
 
 	protected Attribute<?, T> attr = null;
 	
@@ -37,12 +38,6 @@ public class FemPath<T> extends AbstractExpression<T> implements Path<T>, FemExp
 		super(null, cls);
 	}
 	
-
-	@Override
-	public <X> FemExpression<X> as(Class<X> cls) {
-		return new GenericExpression<X>(this, cls);
-	}
-
 
 	@Override
 	public <Y> Path<Y> get(SingularAttribute<? super T, Y> attribute) {
@@ -81,15 +76,10 @@ public class FemPath<T> extends AbstractExpression<T> implements Path<T>, FemExp
 		return null;
 	}
 
-	@Override
-	public boolean evaluate(Object obj) {
-		return false;
-	}
-	
 	@SuppressWarnings("unchecked")
-	private T getPathObject(Object rootObj) {
+	T getValueFromRoot(Object rootObj) {
 		if (parentPath == null) return (T)rootObj;
-		return getValueFromAttribute(parentPath.getPathObject(rootObj));
+		return getValueFromAttribute(parentPath.getValueFromRoot(rootObj));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -117,8 +107,12 @@ public class FemPath<T> extends AbstractExpression<T> implements Path<T>, FemExp
 
 
 	@Override
-	public T getValue(Object rootObj) {
-		return getValueFromAttribute(parentPath.getPathObject(rootObj));
+	public T evaluate(Evaluator eval) {
+		if (eval instanceof PathEvaluator) {
+			PathEvaluator pEval = (PathEvaluator)eval;
+			return pEval.valueOf(this);
+		}
+		return null;
 	}
 
 

@@ -14,12 +14,18 @@ import javax.persistence.LockModeType;
 import javax.persistence.Parameter;
 import javax.persistence.TemporalType;
 import javax.persistence.TypedQuery;
+import javax.persistence.criteria.ParameterExpression;
+import javax.persistence.criteria.Predicate;
 
+import com.k2.Expressions.ParameterEvaluator;
+import com.k2.Expressions.evaluators.SimpleParameterEvaluator;
+import com.k2.Expressions.expression.CurrentTime;
+import com.k2.Expressions.expression.K2ParameterExpression;
+import com.k2.Expressions.predicate.K2Predicate;
 import com.k2.FilesystemEntityManager.FemError;
 import com.k2.FilesystemEntityManager.FilesystemEntityManager;
-import com.k2.FilesystemEntityManager.criteria.expression.FemParameterExpression;
 
-public class FemTypedQuery<T> implements TypedQuery<T> {
+public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQuery<T>, ParameterEvaluator, PathEvaluator{
 	
 	FemCriteriaQuery<T> qry;
 	FilesystemEntityManager fem;
@@ -27,19 +33,13 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 	public FemTypedQuery(FilesystemEntityManager fem, FemCriteriaQuery<T> qry) {
 		this.fem = fem;
 		this.qry = qry;
+		for (K2ParameterExpression<?> p : qry.getFemQueryParameters().getParameters()) {
+			this.add(p);
+		}
 	}
 	
 	public Class<T> getResultType() { return qry.getResultType(); }
 	
-	public boolean queryMatch(T obj) {
-		
-		for (FemEvaluator e : qry.getEvaluators()) {
-			if (!e.evaluate(obj)) return false;
-		}
-		
-		return true;
-	}
-
 	@Override
 	public int executeUpdate() {
 		// TODO Auto-generated method stub
@@ -77,33 +77,31 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 	}
 
 	@Override
-	public FemParameterExpression<?> getParameter(String alias) {
+	public K2ParameterExpression<?> getParameter(String alias) {
 		return qry.getFemQueryParameters().getParamater(alias);
 	}
 
 	@Override
-	public FemParameterExpression<?> getParameter(int pos) {
+	public K2ParameterExpression<?> getParameter(int pos) {
 		return qry.getFemQueryParameters().getParamater(pos);
 	}
 
 	@Override
-	public <P> FemParameterExpression<P> getParameter(String alias, Class<P> type) {
+	public <P> K2ParameterExpression<P> getParameter(String alias, Class<P> type) {
 		return qry.getFemQueryParameters().getParamater(alias, type);
 	}
 
 	@Override
-	public <P> FemParameterExpression<P> getParameter(int pos, Class<P> type) {
+	public <P> K2ParameterExpression<P> getParameter(int pos, Class<P> type) {
 		return qry.getFemQueryParameters().getParamater(pos, type);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <P> P getParameterValue(Parameter<P> parm) {
-		if (parm instanceof FemParameterExpression<?>) {
-			FemParameterExpression<?> fp = (FemParameterExpression<?>)parm;
-			if (fp.getParameterType().isAssignableFrom(parm.getParameterType())) {
-				return (P) fp.getValue(null);
-			}
+		if (parm instanceof K2ParameterExpression<?>) {
+			K2ParameterExpression<P> pe = (K2ParameterExpression<P>)parm;
+			return valueOf(pe);
 		}
 		return null;
 	}
@@ -127,9 +125,9 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 
 	@Override
 	public boolean isBound(Parameter<?> parm) {
-		if (parm instanceof FemParameterExpression<?>) {
-			FemParameterExpression<?> fp = (FemParameterExpression<?>)parm;
-			return fp.isBound();
+		if (parm instanceof K2ParameterExpression<?>) {
+			K2ParameterExpression<?> pe = (K2ParameterExpression<?>)parm;
+			return parameterValues.containsKey(pe);
 		}
 		return false;
 	}
@@ -184,29 +182,23 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 
 	@Override
 	public <P> TypedQuery<T> setParameter(Parameter<P> parm, P value) {
-		if (parm instanceof FemParameterExpression) {
-			FemParameterExpression<P> fp = (FemParameterExpression<P>)parm;
-			fp.setValue(value);
+		if (parm instanceof K2ParameterExpression) {
+			set((K2ParameterExpression<P>)parm, value);
 		}
 		return this;
 	}
 
 	@Override
 	public TypedQuery<T> setParameter(String alias, Object value) {
-		FemParameterExpression<?> fp = getParameter(alias);
-		if (fp != null) { 
-			fp.setObjectValue(value); 
-		} else {
-			throw new FemError("No paramter with alias '{}' is defind", alias);
-		}
+		setRawParameter(alias, value);
 		return this;
 	}
 
 	@Override
 	public TypedQuery<T> setParameter(int pos, Object value) {
-		FemParameterExpression<?> fp = getParameter(pos);
-		if (fp != null) { 
-			fp.setObjectValue(value); 
+		K2ParameterExpression<?> pe = getParameter(pos);
+		if (pe != null) { 
+			setRawParameter(pe, value); 
 		} else {
 			throw new FemError("No paramter with postion '{}' is defind", pos);
 		}
@@ -221,16 +213,16 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 
 	@Override
 	public TypedQuery<T> setParameter(Parameter<Date> parm, Date date, TemporalType temporalType) {
-		FemParameterExpression<Date> fp = (FemParameterExpression<Date>)parm;
+		K2ParameterExpression<Date> pe = (K2ParameterExpression<Date>)parm;
 		switch(temporalType) {
 		case DATE:
-			fp.setValue(date);
+			setRawParameter(pe, date);
 			break;
 		case TIME:
-			fp.setValue(new Time(date.getTime()));
+			setRawParameter(pe, new Time(date.getTime()));
 			break;
 		case TIMESTAMP:
-			fp.setValue(new Timestamp(date.getTime()));
+			setRawParameter(pe, new Timestamp(date.getTime()));
 			break;
 		}
 		return this;
@@ -244,7 +236,7 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 
 	@Override
 	public TypedQuery<T> setParameter(String alias, Date date, TemporalType temporalType) {
-		FemParameterExpression<Date> fp = getParameter(alias, Date.class);
+		K2ParameterExpression<Date> fp = getParameter(alias, Date.class);
 		if (fp != null) { 
 			return setParameter(fp, date, temporalType); 
 		} else {
@@ -260,12 +252,34 @@ public class FemTypedQuery<T> implements TypedQuery<T> {
 
 	@Override
 	public TypedQuery<T> setParameter(int pos, Date date, TemporalType temporalType) {
-		FemParameterExpression<Date> fp = getParameter(pos, Date.class);
+		K2ParameterExpression<Date> fp = getParameter(pos, Date.class);
 		if (fp != null) { 
 			return setParameter(fp, date, temporalType); 
 		} else {
 			throw new FemError("No date paramter with position '{}' is defind", pos);
 		}
 	}
+
+	T matchRoot = null;
+	
+	public boolean queryMatch(T obj) {
+		Predicate p = qry.getRestriction();
+		if (p instanceof K2Predicate) {
+			K2Predicate kp = (K2Predicate)p;
+			matchRoot = obj;
+			boolean matched = kp.evaluate(this);
+			matchRoot = null;
+			return matched;
+		}
+		
+		throw new FemError("The FemTypedQuery can only evaluate K2 Predicates");
+	}
+
+
+	@Override
+	public <V> V valueOf(FemPath<V> path) {
+		return path.getValueFromRoot(matchRoot);
+	}
+
 
 }

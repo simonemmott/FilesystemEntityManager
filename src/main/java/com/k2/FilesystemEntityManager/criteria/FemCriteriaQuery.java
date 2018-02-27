@@ -15,10 +15,10 @@ import javax.persistence.criteria.Selection;
 import javax.persistence.criteria.Subquery;
 import javax.persistence.metamodel.EntityType;
 
+import com.k2.Expressions.expression.K2ParameterExpression;
+import com.k2.Expressions.predicate.K2Predicate;
+import com.k2.Expressions.predicate.PredicateAnd;
 import com.k2.FilesystemEntityManager.FemError;
-import com.k2.FilesystemEntityManager.criteria.expression.FemExpression;
-import com.k2.FilesystemEntityManager.criteria.expression.FemParameterExpression;
-import com.k2.FilesystemEntityManager.criteria.expression.FemPredicate;
 
 public class FemCriteriaQuery<T> implements CriteriaQuery<T> {
 
@@ -77,10 +77,11 @@ public class FemCriteriaQuery<T> implements CriteriaQuery<T> {
 		return distinct;
 	}
 
+	private Predicate restriction = null;
+	
 	@Override
 	public Predicate getRestriction() {
-		// TODO Auto-generated method stub
-		return null;
+		return restriction;
 	}
 
 	@Override
@@ -109,7 +110,11 @@ public class FemCriteriaQuery<T> implements CriteriaQuery<T> {
 	}
 	@Override
 	public Set<ParameterExpression<?>> getParameters() {
-		return queryParameters.getParameters();
+		Set<ParameterExpression<?>> set = new HashSet<ParameterExpression<?>>(queryParameters.getParameters().size());
+		for (K2ParameterExpression<?> pe : queryParameters.getParameters()) {
+			set.add(pe);
+		}
+		return set;
 	}
 
 	@Override
@@ -174,33 +179,30 @@ public class FemCriteriaQuery<T> implements CriteriaQuery<T> {
 		return this;
 	}
 	
-	private List<FemEvaluator> evaluators = new ArrayList<FemEvaluator>();
-	List<FemEvaluator> getEvaluators() { return evaluators; }
-
 	@SuppressWarnings("rawtypes")
 	@Override
 	public CriteriaQuery<T> where(Expression expr) {
-		evaluators.clear();
 		queryParameters.clear();
-		if (expr instanceof FemParameterExpression) {
-			queryParameters.add((FemParameterExpression<?>)expr);
+		if (expr instanceof K2ParameterExpression) {
+			queryParameters.add((K2ParameterExpression<?>)expr);
 		}
-		if (expr instanceof FemPredicate) {
-			((FemPredicate)expr).populateParameters(queryParameters);
+		if (expr instanceof K2Predicate) {
+			((K2Predicate)expr).populateParameters(queryParameters);
+			restriction = (K2Predicate)expr;
 		}
-		evaluators.add((FemExpression)expr);
 		return this;
 	}
 
 	@Override
 	public CriteriaQuery<T> where(Predicate... predicates) {
-		evaluators.clear();
+		K2Predicate[] kps = new K2Predicate[predicates.length];
+		for (int i=0; i<predicates.length; i++) kps[i] = (K2Predicate)predicates[i]; 
+		restriction = new PredicateAnd(kps);
 		queryParameters.clear();
 		for (Predicate p : predicates) {
-			if (p instanceof FemPredicate) {
-				FemPredicate fp = (FemPredicate)p;
-				fp.populateParameters(queryParameters);
-				evaluators.add(fp);
+			if (p instanceof K2Predicate) {
+				K2Predicate kp = (K2Predicate)p;
+				kp.populateParameters(queryParameters);
 			}
 		}
 		return this;
