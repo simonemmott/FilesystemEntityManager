@@ -25,7 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
-import com.k2.FilesystemEntityManager.FemTestClient.*;
+import com.k2.FilesystemEntityManager.example.Foo;
+import com.k2.FilesystemEntityManager.example.Foo_;
+import com.k2.FilesystemEntityManager.example.Too;
+import com.k2.FilesystemEntityManager.example.Too_;
+import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.FileUtil;
 
 

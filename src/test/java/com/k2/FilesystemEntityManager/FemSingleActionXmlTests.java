@@ -9,7 +9,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.k2.FilesystemEntityManager.FemTestClient.*;
+import com.k2.FilesystemEntityManager.example.FemTestClient;
+import com.k2.FilesystemEntityManager.example.XmlFoo;
+import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 

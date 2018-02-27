@@ -61,9 +61,6 @@ public abstract class AbstractExpression<T> implements FemExpression<T> {
 	}
 
 
-	public FemPredicate getTrue() { return AbstractPredicate.getTrue(); }
-	public FemPredicate getFalse() { return AbstractPredicate.getFalse(); }
-
 	@Override
 	public FemPredicate in(Object... objects) {
 		return new PredicateIn(this, objects);

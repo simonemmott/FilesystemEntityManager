@@ -11,7 +11,7 @@ import javax.persistence.metamodel.SetAttribute;
 import javax.persistence.metamodel.Type;
 
 import com.k2.FilesystemEntityManager.FemError;
-import com.k2.Util.ClassUtil;
+import com.k2.Util.classes.ClassUtil;
 
 public class FemSetAttribute<X, T> implements SetAttribute<X, T> {
 	

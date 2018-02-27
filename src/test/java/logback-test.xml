@@ -10,6 +10,7 @@
 
   <logger name="com.k2.FilesystemEntityManager.metamodel" level="off"/>
   <logger name="com.k2.FilesystemEntityManager.criteria" level="trace"/>
+  <logger name="com.k2.FilesystemEntityManager.util" level="trace"/>
   <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>

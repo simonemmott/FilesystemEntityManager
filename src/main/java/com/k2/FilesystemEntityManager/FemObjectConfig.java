@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.annotations.Expose;
-import com.k2.Util.ClassUtil;
+import com.k2.Util.classes.ClassUtil;
 /**
  * This class defines The storage configuration for a specific class
  * 

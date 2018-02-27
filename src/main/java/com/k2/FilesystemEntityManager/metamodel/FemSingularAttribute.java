@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.FilesystemEntityManager.FemError;
-import com.k2.Util.ClassUtil;
+import com.k2.Util.classes.ClassUtil;
 
 public class FemSingularAttribute<X, T> implements SingularAttribute<X, T> {
 	

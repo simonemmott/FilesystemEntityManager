@@ -13,7 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
-import com.k2.FilesystemEntityManager.FemTestClient.*;
+import com.k2.FilesystemEntityManager.example.FemTestClient;
+import com.k2.FilesystemEntityManager.example.Foo;
+import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.FileUtil;
 
 
@@ -75,7 +77,7 @@ public class FemConfigTests {
 		
 		File config = new File("example/new/femf/fem.conf");
 		assertTrue(config.exists());
-		assertEquals("76679fa81b156ccf2f90de8fbe457b59", Files.hash(config, Hashing.md5()).toString());
+		assertEquals("1340d37800aaf6c02a2648a2cc34f431", Files.hash(config, Hashing.md5()).toString());
 		
         
 		logger.info("Shutting down filesystem entity manager factory");

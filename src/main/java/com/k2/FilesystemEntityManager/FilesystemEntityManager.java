@@ -46,6 +46,10 @@ import org.slf4j.LoggerFactory;
 
 import com.k2.FilesystemEntityManager.criteria.FemCriteriaQuery;
 import com.k2.FilesystemEntityManager.criteria.FemTypedQuery;
+import com.k2.FilesystemEntityManager.proxy.ProxyUtil;
+import com.k2.FilesystemEntityManager.util.EntityUtil;
+import com.k2.FilesystemEntityManager.util.KeyUtil;
+import com.k2.FilesystemEntityManager.util.cache.EntityLink;
 import com.k2.Util.FileUtil;
 import com.k2.Util.ObjectUtil;
 import com.k2.Util.StringUtil;
@@ -367,9 +371,9 @@ public class FilesystemEntityManager implements EntityManager{
 	private File objResource(File resourceLocation, FemDataFormat dataFormat, Class<?> cls, Serializable key) {
 		switch(dataFormat) {
 		case JSON:
-			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+IdentityUtil.toString(key)+FilesystemEntityManagerFactory.JSON);
+			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+KeyUtil.serialize(key)+FilesystemEntityManagerFactory.JSON);
 		case XML:
-			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+IdentityUtil.toString(key)+FilesystemEntityManagerFactory.XML);
+			return new File(resourceLocation.getAbsolutePath()+File.separatorChar+KeyUtil.serialize(key)+FilesystemEntityManagerFactory.XML);
 		default:
 			throw new FemError("Unsupported data format: "+dataFormat+" fetching '"+cls.getCanonicalName()+"("+key+")'");
 		}
@@ -795,6 +799,11 @@ public class FilesystemEntityManager implements EntityManager{
 			
 			// Return the object fetched from the repository
 			logger.trace("found: {}({})", cls, key);
+			
+			for (EntityLink<T,?> link : EntityUtil.getLazyLoadLinks(cls)) {
+				ProxyUtil.setProxyInLink(this, wrappedObj.obj, link);
+			}
+			
 			return wrappedObj.obj;
 		} else {
 			return null;

@@ -11,7 +11,8 @@ import org.junit.runners.Suite;
 	FemSingleActionXmlTests.class,
 	FemMultipleActionXmlTests.class,
 	FemMultiThreadedTests.class,
-	FemRawTests.class
+	FemRawTests.class,
+	KeyUtilTests.class
 })
 public class FemTestSuite {
 

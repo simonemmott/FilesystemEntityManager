@@ -85,6 +85,13 @@ public class FemConfig {
 		configure(cls, conf);
 		return this;
 	}
+	
+	public FemConfig configure(Class<?> ... classes) {
+		for (Class<?> cls : classes) {
+			objectConfig(cls);
+		}
+		return this;
+	}
 	/**
 	 * Get the storage configuration for the given class.
 	 * 
