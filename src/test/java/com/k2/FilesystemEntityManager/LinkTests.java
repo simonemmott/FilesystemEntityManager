@@ -3,13 +3,15 @@ package com.k2.FilesystemEntityManager;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
 import java.nio.file.Paths;
-import java.util.Date;
+import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 
 import org.junit.After;
 import org.junit.Before;
@@ -17,14 +19,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.k2.FilesystemEntityManager.proxy.KeyLinkProxyController;
-import com.k2.FilesystemEntityManager.proxy.LinkProxy;
-import com.k2.FilesystemEntityManager.proxy.ProxyUtil;
 import com.k2.FilesystemEntityManager.testEntities.*;
-import com.k2.FilesystemEntityManager.testEntities.proxies.Foo_DPx;
 import com.k2.FilesystemEntityManager.util.KeyUtil;
+import com.k2.Proxy.AProxy;
 import com.k2.Util.FileUtil;
-import com.k2.Util.classes.ClassUtil;
 
 
 public class LinkTests {
@@ -62,6 +60,8 @@ public class LinkTests {
 		femf.config()
 			.configure(Foo.class, Bar.class, Too.class)
 			.configure();
+		
+		femf.manage(Foo.class, Bar.class, Too.class);
 		
 		EntityManager em = femf.createEntityManager();
 		
@@ -124,6 +124,22 @@ public class LinkTests {
 
 	}
 		
+	
+	@Test
+	public void staticMetamodelTest() {
+		assertNotNull(Foo_.id);
+		assertNotNull(Foo_.name);
+		assertNotNull(Bar_.alias);
+		assertNotNull(Bar_.name);
+		assertNotNull(Bar_.sequence);
+		assertNotNull(Too_.bar);
+		assertNotNull(Too_.barAlias);
+		assertNotNull(Too_.barSequence);
+		assertNotNull(Too_.foo);
+		assertNotNull(Too_.fooId);
+		assertNotNull(Too_.id);
+		assertNotNull(Too_.name);
+	}
 
 	
 	@Test
@@ -149,20 +165,85 @@ public class LinkTests {
 		assertEquals(Long.valueOf(3), Long.valueOf(too.getId()));
 		assertEquals("Too3 with foo3 and bar2 (2)", too.getName());
 		
-		assertTrue(LinkProxy.class.isAssignableFrom(too.getFoo().getClass()));
+		assertTrue(AProxy.class.isAssignableFrom(too.getFoo().getClass()));
 		
 		assertNotNull(too.getFoo());
 		
 		assertEquals(Long.valueOf(3), too.getFoo().getId());
 		assertEquals("foo3", too.getFoo().getName());
 		
-		assertTrue(LinkProxy.class.isAssignableFrom(too.getBar().getClass()));
+		assertTrue(AProxy.class.isAssignableFrom(too.getBar().getClass()));
 		
 		assertNotNull(too.getBar());
 		
 		assertEquals("bar2", too.getBar().getAlias());
 		assertEquals(Integer.valueOf(2), too.getBar().getSequence());
 		assertEquals("Bar 2 (2)", too.getBar().getName());
+		
+		
+		em.close();
+    }
+
+	@Test
+	public void listTest() throws IllegalArgumentException, IllegalAccessException
+    {
+
+		EntityManager em = femf.createEntityManager();
+
+		CriteriaBuilder builder = femf.getCriteriaBuilder();
+		
+		CriteriaQuery<Too> criteria = builder.createQuery(Too.class);
+		
+		Root<Too> root = criteria.from(Too.class);
+		
+		criteria.select(root).where(builder.equal(root.join(Too_.bar).get(Bar_.sequence), builder.literal(1)));
+		
+		TypedQuery<Too> query = em.createQuery(criteria);
+
+		List<Too> result = query.getResultList();
+		
+		assertEquals(2, result.size());
+		
+		Too too1 = null;
+		Too too2 = null;
+		
+		for (Too too : result) {
+			if (too.getId() == 1) too1 = too;
+			if (too.getId() == 2) too2 = too;
+		}
+		
+		assertNotNull(too1);
+		assertNotNull(too2);
+		
+		assertEquals("Too1 with foo1 and bar1 (1)", too1.getName());
+		assertEquals("Too2 with foo2 and bar2 (1)", too2.getName());
+		
+		criteria = builder.createQuery(Too.class);
+		
+		root = criteria.from(Too.class);
+		
+		criteria.select(root).where(builder.equal(root.join(Too_.bar).get(Bar_.alias), "bar2"));
+		
+		query = em.createQuery(criteria);
+
+		result = query.getResultList();
+		
+		assertEquals(2, result.size());
+		
+		too1 = null;
+		too2 = null;
+		
+		for (Too too : result) {
+			if (too.getId() == 2) too1 = too;
+			if (too.getId() == 3) too2 = too;
+		}
+		
+		assertNotNull(too1);
+		assertNotNull(too2);
+		
+		assertEquals("Too2 with foo2 and bar2 (1)", too1.getName());
+		assertEquals("Too3 with foo3 and bar2 (2)", too2.getName());
+		
 		
 		
 		em.close();

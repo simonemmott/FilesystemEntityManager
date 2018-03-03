@@ -1,18 +1,23 @@
 package com.k2.FilesystemEntityManager.example;
 
+import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import javax.persistence.Id;
 import javax.persistence.Table;
 
 import com.google.gson.annotations.Expose;
 import com.k2.FilesystemEntityManager.example.Bar;
-import com.k2.Util.Identity.Id;
 
 @Embeddable
 @Table(name="Bars")
-public class Bar implements Id<Bar, Integer> {
+public class Bar implements com.k2.Util.Identity.Id<Bar, Integer> {
 
+	@Id
+	@Column
 	@Expose Integer id;
+	@Column
 	@Expose String name;
+	@Column
 	@Expose String description;
 
 	public Integer getId() { return id; }

@@ -793,16 +793,17 @@ public class FilesystemEntityManager implements EntityManager{
 			logger.trace("not found: {}({})", cls, key);
 			return null;
 		}
+
+		for (EntityLink<T,?> link : EntityUtil.getLazyLoadLinks(cls)) {
+			ProxyUtil.setProxyInLink(this, wrappedObj.obj, link);
+		}
+
 		if (qry == null || qry.queryMatch(wrappedObj.obj)) {
 			// Add the fetched and wrapped instance to this entity managers cache of attached objects
 			cache(cls, key, wrappedObj);
 			
 			// Return the object fetched from the repository
 			logger.trace("found: {}({})", cls, key);
-			
-			for (EntityLink<T,?> link : EntityUtil.getLazyLoadLinks(cls)) {
-				ProxyUtil.setProxyInLink(this, wrappedObj.obj, link);
-			}
 			
 			return wrappedObj.obj;
 		} else {
@@ -1636,7 +1637,7 @@ public class FilesystemEntityManager implements EntityManager{
 		
 		for (File f : FileUtil.listForExtension(repoLocation, objDataFormat.getExtention())) {
 			if (f.exists() && f.isFile() && f.length() > 0) {
-				keys.add(IdentityUtil.toKey(IdentityUtil.getIdFieldType(cls), FileUtil.getBasename(f)));
+				keys.add(KeyUtil.deserialize(IdentityUtil.getIdFieldType(cls), FileUtil.getBasename(f)));
 			}
 		}
 

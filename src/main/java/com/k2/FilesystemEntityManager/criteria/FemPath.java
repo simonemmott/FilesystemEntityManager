@@ -1,5 +1,6 @@
 package com.k2.FilesystemEntityManager.criteria;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
@@ -18,12 +19,19 @@ import javax.persistence.metamodel.MapAttribute;
 import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.k2.Expressions.Evaluator;
 import com.k2.Expressions.expression.*;
 import com.k2.FilesystemEntityManager.FemError;
+import com.k2.Proxy.AProxy;
+import com.k2.Util.StringUtil;
 import com.k2.Util.Identity.IdentityUtil;
 
 public class FemPath<T> extends AbstractExpression<T> implements Path<T>, K2Expression<T> {
+
+	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	protected Attribute<?, T> attr = null;
 	
@@ -35,7 +43,7 @@ public class FemPath<T> extends AbstractExpression<T> implements Path<T>, K2Expr
 		this.attr = attr;
 	}
 	public FemPath(Class<T> cls) {
-		super(null, cls);
+		super(cls.getSimpleName(), cls);
 	}
 	
 
@@ -75,28 +83,44 @@ public class FemPath<T> extends AbstractExpression<T> implements Path<T>, K2Expr
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	@Override
+	public String toString() {
+		return "Path: "+this.getAlias()+"("+this.getJavaType().getSimpleName()+")";
+	}
 
 	@SuppressWarnings("unchecked")
 	T getValueFromRoot(Object rootObj) {
-		if (parentPath == null) return (T)rootObj;
+		if (parentPath == null) {
+			logger.trace("{} is root, returning root object {}({})", this, rootObj.getClass().getSimpleName(), IdentityUtil.getIdentity(rootObj));
+			return (T)rootObj;
+		}
+		logger.trace("{} is not root, returning attribute value from parent path", this);
 		return getValueFromAttribute(parentPath.getValueFromRoot(rootObj));
 	}
 	
 	@SuppressWarnings("unchecked")
 	private T getValueFromAttribute(Object obj) {
-		if (obj == null) return  null;
+		if (obj == null) {
+			logger.trace("Returning null value from null object");
+			return  null;
+		}
 		Member m = attr.getJavaMember();
 		
 		try {
 			if (m instanceof Field) {
 				Field f = (Field)m;
 				if (!f.isAccessible()) f.setAccessible(true);
-				return (T) f.get(obj);
+				T value = (T) f.get(obj);
+				logger.trace("{} returning {} from field {}.{}:{}", this, StringUtil.toString(value), f.getDeclaringClass().getName(), f.getName(), f.getType().getSimpleName());
+				return value;
 			}
 			if (m instanceof Method) {
 				Method meth = (Method)m;
 				if (!meth.isAccessible()) meth.setAccessible(true);
-				return (T) meth.invoke(obj);
+				T value = (T) meth.invoke(obj);
+				logger.trace("{} returning {} from method {}.{}:{}", this, StringUtil.toString(value), meth.getDeclaringClass().getName(), meth.getName(), meth.getReturnType().getSimpleName());
+				return value;
 			}
 		} catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
 			throw new FemError("Unable to get value from member {} of class {}", e, m.getName(), obj.getClass().getName());
@@ -110,7 +134,9 @@ public class FemPath<T> extends AbstractExpression<T> implements Path<T>, K2Expr
 	public T evaluate(Evaluator eval) {
 		if (eval instanceof PathEvaluator) {
 			PathEvaluator pEval = (PathEvaluator)eval;
-			return pEval.valueOf(this);
+			T value = pEval.valueOf(this);
+			logger.trace("{} evaluates to {}", this, StringUtil.toString(value));
+			return value;
 		}
 		return null;
 	}

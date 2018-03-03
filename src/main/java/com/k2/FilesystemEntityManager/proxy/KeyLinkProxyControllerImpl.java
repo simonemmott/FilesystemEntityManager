@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import javax.persistence.EntityManager;
 
 import com.k2.FilesystemEntityManager.util.KeyUtil;
+import com.k2.Util.ObjectUtil;
 
 public class KeyLinkProxyControllerImpl<D,E> implements KeyLinkProxyController<D, E> {
 	
@@ -28,12 +29,15 @@ public class KeyLinkProxyControllerImpl<D,E> implements KeyLinkProxyController<D
 	}
 	
 	@Override
-	public E unwrap() {
+	public E unwrap(E proxy) {
 		if (state == State.FETCHED) return proxyTo;
 		
 		proxyTo = em.find(proxyOf, KeyUtil.keyFor(proxyOf, declaringInstance, keyFields));
 		
 		state = State.FETCHED;
+		
+		if (proxyTo != null) 
+			ObjectUtil.copy(proxyTo, proxy);
 		
 		return proxyTo;
 	}
@@ -42,12 +46,6 @@ public class KeyLinkProxyControllerImpl<D,E> implements KeyLinkProxyController<D
 	public KeyLinkProxyController<D,E> bind(Field... keyFields) {
 		this.keyFields = keyFields;
 		return this;
-	}
-
-	@Override
-	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {		
-		if (unwrap() == null) return null;
-		return method.invoke(proxyTo, args);
 	}
 
 }

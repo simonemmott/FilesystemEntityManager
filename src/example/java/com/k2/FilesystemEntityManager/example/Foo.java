@@ -5,29 +5,44 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.google.gson.annotations.Expose;
 import com.k2.FilesystemEntityManager.example.Bar;
 import com.k2.FilesystemEntityManager.example.Foo;
 import com.k2.FilesystemEntityManager.example.Too;
-import com.k2.Util.Identity.Id;
 
 @Entity()
 @Table(name="Foos")
-public class Foo implements Id<Foo, String> {
+public class Foo implements com.k2.Util.Identity.Id<Foo, String> {
 	
+	@Id
+	@Column
 	@Expose public String id;
+	@Column
 	@Expose public Integer sequence;
+	@Column
 	@Expose public String description;
+	@Column
 	@Expose public Integer intVal;
+	@Column
 	@Expose public Long	 longVal;
+	@Column
 	@Expose public Float floatVal;
+	@Column
 	@Expose public Double doubleVal;
+	@Column
 	@Expose public Boolean booleanVal;
+	@Column
 	@Expose public Date dateVal;
+	@ManyToOne
 	@Expose public Too too;
+	@OneToMany
 	@Expose public Set<Bar> bars;
 	
 	public String getId() { return id; }

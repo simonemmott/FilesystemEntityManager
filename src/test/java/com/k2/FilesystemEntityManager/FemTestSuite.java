@@ -12,7 +12,11 @@ import org.junit.runners.Suite;
 	FemMultipleActionXmlTests.class,
 	FemMultiThreadedTests.class,
 	FemRawTests.class,
-	KeyUtilTests.class
+	KeyUtilTests.class,
+	LinkTests.class,
+	MetamodelTests.class,
+	EntityUtilTest.class,
+	FemQueryTests.class
 })
 public class FemTestSuite {
 

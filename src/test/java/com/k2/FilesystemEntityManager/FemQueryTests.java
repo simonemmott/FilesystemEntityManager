@@ -69,6 +69,8 @@ public class FemQueryTests {
 			.resourcePath("Foo")
 			.configure();
 		
+		femf.manage(Foo.class, Too.class);
+		
 		EntityManager em = femf.createEntityManager();
 		
 		em.persist(new Foo()
@@ -634,7 +636,7 @@ public class FemQueryTests {
 		Root<Foo> root = criteria.from(Foo.class);
 
 		criteria.select(root).where(
-			builder.greaterThanOrEqualTo(root.get(Foo_.dataVal), new Date(900000000))
+			builder.greaterThanOrEqualTo(root.get(Foo_.dateVal), new Date(900000000))
 			);
 
 		TypedQuery<Foo> query = em.createQuery(criteria);
@@ -664,7 +666,7 @@ public class FemQueryTests {
 		Root<Foo> root = criteria.from(Foo.class);
 
 		criteria.select(root).where(
-			builder.greaterThan(root.get(Foo_.dataVal), new Date(900000000))
+			builder.greaterThan(root.get(Foo_.dateVal), new Date(900000000))
 			);
 
 		TypedQuery<Foo> query = em.createQuery(criteria);
@@ -964,7 +966,7 @@ public class FemQueryTests {
 		Root<Foo> root = criteria.from(Foo.class);
 
 		criteria.select(root).where(
-			builder.lessThanOrEqualTo(root.get(Foo_.dataVal), new Date(900000000))
+			builder.lessThanOrEqualTo(root.get(Foo_.dateVal), new Date(900000000))
 			);
 
 		TypedQuery<Foo> query = em.createQuery(criteria);
@@ -994,7 +996,7 @@ public class FemQueryTests {
 		Root<Foo> root = criteria.from(Foo.class);
 
 		criteria.select(root).where(
-			builder.lessThan(root.get(Foo_.dataVal), new Date(900000000))
+			builder.lessThan(root.get(Foo_.dateVal), new Date(900000000))
 			);
 
 		TypedQuery<Foo> query = em.createQuery(criteria);

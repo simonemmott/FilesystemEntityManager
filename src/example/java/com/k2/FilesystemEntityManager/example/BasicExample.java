@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
@@ -26,6 +27,7 @@ import com.k2.FilesystemEntityManager.FilesystemEntityManager;
 import com.k2.FilesystemEntityManager.FilesystemEntityManagerFactory;
 import com.k2.FilesystemEntityManager.example.Foo;
 import com.k2.Util.FileUtil;
+import com.k2.Util.classes.ClassUtil;
 
 public class BasicExample {
 
@@ -67,10 +69,16 @@ public class BasicExample {
 			
 			*/
 		
-		BasicExample be = new BasicExample();
-		be.setupData();
-		be.parameterListTest();
-		be.clearDownData();
+		Field barsField = ClassUtil.getField(Foo.class, "bars");
+		Class<?> type = ClassUtil.getFieldGenericTypeClass(barsField, 0);
+		System.out.println(type.getName());
+		
+		
+		
+		//BasicExample be = new BasicExample();
+		//be.setupData();
+		//be.parameterListTest();
+		//be.clearDownData();
 	}
 
 	public void parameterListTest() throws FemException, IOException

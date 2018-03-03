@@ -15,8 +15,7 @@ public class FemType<T> implements Type<T> {
 
 	@Override
 	public PersistenceType getPersistenceType() {
-		// TODO Auto-generated method stub
-		return null;
+		return PersistenceType.BASIC;
 	}
 
 }

@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationHandler;
 
 import javax.persistence.EntityManager;
 
-public interface KeyLinkProxyController<D,E> extends LinkProxyController<D,E>, InvocationHandler {
+public interface KeyLinkProxyController<D,E> extends LinkProxyController<D,E> {
 	
 	public KeyLinkProxyController<D,E> bind(Field ... keyFields);
 	

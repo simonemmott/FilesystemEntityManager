@@ -379,9 +379,9 @@ public class KeyUtil {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static <K extends Serializable> K deserialise(Class<K> keyClass, String ser) {
+	public static <K extends Serializable> K deserialize(Class<K> keyClass, String ser) {
 		
-		if (keyClass.getName().startsWith("java.") || !keyClass.getName().contains(".")) {
+		if (keyClass.getName().startsWith("java.") || ! keyClass.getName().contains(".")) {
 			return (K) deserializeFieldValue(keyClass, ser);
 		} else {
 			String[] fieldSers = ser.split(":");
@@ -405,7 +405,7 @@ public class KeyUtil {
 	}
 	
 	public static Serializable toKey(Class<?> entityClass, String ser) {
-		return deserialise(getKeyClass(entityClass), ser);
+		return deserialize(getKeyClass(entityClass), ser);
 	}
 	public static Field[] getKeyFields(Class<?> entityClass) {
 		List<Field> keyFields = new ArrayList<Field>();

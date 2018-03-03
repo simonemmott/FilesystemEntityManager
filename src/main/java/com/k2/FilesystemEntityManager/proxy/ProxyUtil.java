@@ -3,6 +3,7 @@ package com.k2.FilesystemEntityManager.proxy;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 
@@ -13,10 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import com.k2.FilesystemEntityManager.FemError;
 import com.k2.FilesystemEntityManager.testEntities.*;
-import com.k2.FilesystemEntityManager.testEntities.proxies.Bar_DPx;
-import com.k2.FilesystemEntityManager.testEntities.proxies.Foo_DPx;
 import com.k2.FilesystemEntityManager.util.EntityUtil;
 import com.k2.FilesystemEntityManager.util.cache.EntityLink;
+import com.k2.Proxy.AProxy;
+import com.k2.Proxy.ProxyFactory;
 import com.k2.Util.classes.ClassUtil;
 
 public class ProxyUtil {
@@ -51,35 +52,23 @@ public class ProxyUtil {
 		KeyLinkProxyController<D,E> klpc = KeyLinkProxyController.createController(em, linkOnObj, link.getType())
 				.bind(link.getLinkFromFields());
 		
-//		return getKeyLinkProxy(klpc, link.getType());
+		InvocationHandler handler = new KeyLinkProxyInvocationHandler<D,E>(klpc);
 
 		
 		try {
 
-			Class<? extends E> dPxClass = getKeyLinkProxyClass(linkOnClass, link.getType());
-			if (dPxClass == null) return null;
-			Constructor<? extends E> c = dPxClass.getConstructor(KeyLinkProxyController.class);
-			E proxy = c.newInstance(klpc);
+			Class<? extends AProxy<E>> proxyClass = (Class<? extends AProxy<E>>) ProxyFactory.staticFactory().getProxyClass(link.getType());
+			AProxy<E> aProxy = proxyClass.newInstance();
+			aProxy.setInvocationHandler(handler);
+			return (E)aProxy;
 			
-			return proxy;
-		} catch (NoSuchMethodException | SecurityException e) {
-			throw new FemError("Unable to identify proxy constructor for key link proxy between {} and {}.", e, linkOnClass.getName(), link.getType().getName());
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-			throw new FemError("Unable to create key link proxy between {} and {}.", e, linkOnClass.getName(), link.getType().getName());
-		}		
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException e) {
+			throw new FemError("Unable to create a proxy to {}.", e, link.getType().getName());
+		}	
 
 	}
-	
-	@SuppressWarnings("unchecked")
-	private static <D,E> E getKeyLinkProxy(KeyLinkProxyController<D,E> klpc, Class<E> linkToClass) {
-		
-		return (E) Proxy.newProxyInstance(linkToClass.getClassLoader(), new Class[] {linkToClass}, klpc);
-	}
-	
-	
-	
-	
-	
+
+	/*
 	@SuppressWarnings("unchecked")
 	public static <D,E> Class<? extends E> getKeyLinkProxyClass(Class<D> linkOnClass, Class<E> linkToClass) {
 		
@@ -88,5 +77,5 @@ public class ProxyUtil {
 		logger.warn("No key link proxy class found for link between {} and {}", linkOnClass.getName(), linkToClass.getName());
 		return null;
 	}
-	
+	*/
 }

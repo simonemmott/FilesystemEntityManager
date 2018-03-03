@@ -1,5 +1,6 @@
 package com.k2.FilesystemEntityManager.example;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -14,8 +15,11 @@ public class Too {
 
 	@Id
 	@RootId
+	@Column
 	@Expose public String id;
+	@Column
 	@Expose public String name;
+	@Column
 	@Expose public String description;
 	
 	public String getId() { return id; }

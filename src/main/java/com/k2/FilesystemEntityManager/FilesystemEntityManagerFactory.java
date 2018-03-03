@@ -7,12 +7,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.Cache;
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -21,6 +24,8 @@ import javax.persistence.PersistenceUnitUtil;
 import javax.persistence.Query;
 import javax.persistence.SynchronizationType;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.Metamodel;
 
 import org.slf4j.Logger;
@@ -31,8 +36,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.k2.FilesystemEntityManager.criteria.FemCriteriaBuilder;
+import com.k2.FilesystemEntityManager.metamodel.FemEntityType;
+import com.k2.FilesystemEntityManager.metamodel.FemMetamodel;
 import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
+import com.k2.Util.classes.ClassUtil;
+import com.k2.Util.classes.ClassUtil.AnnotationCheck;
 /**
  * This class creates instances of file system entity managers.
  * 
@@ -360,11 +369,38 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get criteria builder. The current state is {}", "{}", state));
 		return new FemCriteriaBuilder(this);
 	}
+	
+	FemMetamodel metamodel = new FemMetamodel();
+	
+	public FilesystemEntityManagerFactory manage(Class<?> ... classes) {
+		for (Class<?> cls : classes) {
+			ManagedType<?> mt = metamodel.manage(cls);
+			try {
+				Class<?> staticMetaModelClass = Class.forName(cls.getName()+"_");
+				Object staticMetaModel = staticMetaModelClass.newInstance();
+				for (Attribute attr : mt.getDeclaredAttributes()) {
+					Field f = ClassUtil.getField(staticMetaModelClass, attr.getName());
+					f.set(staticMetaModel, attr);
+				}
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return this;
+	}
+	
+	public FilesystemEntityManagerFactory manage(String ... packageNames) {
+		for (String packageName : packageNames) {
+			manage(ClassUtil.getClasses(packageName, AnnotationCheck.ANY, Entity.class, Embeddable.class));
+		}
+		return this;
+	}
 
 	@Override
-	public Metamodel getMetamodel() {
+	public FemMetamodel getMetamodel() {
 		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get entity manager factory metamodel. The current state is {}", "{}", state));
-		throw new FemError("Method not implemented!");
+		return metamodel;
 	}
 
 	@Override

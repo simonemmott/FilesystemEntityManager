@@ -96,7 +96,6 @@ public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQ
 		return qry.getFemQueryParameters().getParamater(pos, type);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <P> P getParameterValue(Parameter<P> parm) {
 		if (parm instanceof K2ParameterExpression<?>) {
@@ -264,6 +263,7 @@ public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQ
 	
 	public boolean queryMatch(T obj) {
 		Predicate p = qry.getRestriction();
+		if (p == null) return true;
 		if (p instanceof K2Predicate) {
 			K2Predicate kp = (K2Predicate)p;
 			matchRoot = obj;
