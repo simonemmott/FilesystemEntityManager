@@ -19,7 +19,7 @@ import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.FileUtil;
 
 
-public class FemConfigTests {
+public class FemConfigTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 		

@@ -1,11 +1,8 @@
 package com.k2.FilesystemEntityManager.proxy;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
 
 import javax.persistence.EntityManager;
 
@@ -13,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.FilesystemEntityManager.FemError;
-import com.k2.FilesystemEntityManager.testEntities.*;
 import com.k2.FilesystemEntityManager.util.EntityUtil;
 import com.k2.FilesystemEntityManager.util.cache.EntityLink;
 import com.k2.Proxy.AProxy;

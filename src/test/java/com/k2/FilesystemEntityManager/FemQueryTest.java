@@ -33,7 +33,7 @@ import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.FileUtil;
 
 
-public class FemQueryTests {
+public class FemQueryTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

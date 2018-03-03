@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:wrapper xmlns:ns2="com.k2.FilesystemEntityManager.example">
+    <ocn>0</ocn>
+    <obj xsi:type="xmlFoo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <id>uzdYRD</id>
+        <sequence>1</sequence>
+        <description>This is a XmlFoo!</description>
+    </obj>
+</ns2:wrapper>

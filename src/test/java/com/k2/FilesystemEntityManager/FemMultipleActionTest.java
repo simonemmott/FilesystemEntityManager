@@ -16,7 +16,7 @@ import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 
 
-public class FemMultipleActionTests {
+public class FemMultipleActionTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 		

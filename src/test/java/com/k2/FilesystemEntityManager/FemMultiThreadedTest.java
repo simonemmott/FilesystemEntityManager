@@ -15,7 +15,7 @@ import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.StringUtil;
 
 
-public class FemMultiThreadedTests {
+public class FemMultiThreadedTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 		

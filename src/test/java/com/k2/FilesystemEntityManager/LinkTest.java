@@ -25,7 +25,7 @@ import com.k2.Proxy.AProxy;
 import com.k2.Util.FileUtil;
 
 
-public class LinkTests {
+public class LinkTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

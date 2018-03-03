@@ -10,13 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.FilesystemEntityManager.example.FemTestClient;
-import com.k2.FilesystemEntityManager.example.RawFoo;
+import com.k2.FilesystemEntityManager.example.Foo;
 import com.k2.FilesystemEntityManager.example.FemTestClient.*;
 import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 
 
-public class FemRawTests {
+public class FemSingleActionTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 		
@@ -45,26 +45,26 @@ public class FemRawTests {
 	        ftc.start();
 	        synchronized(waiter) { waiter.wait(); }
 	        
-	        synchronized(ftc.waiter()) { ftc.fetch(RawFoo.class, "thisRawFoo").notify(); }
+	        synchronized(ftc.waiter()) { ftc.fetch(Foo.class, "thisFoo").notify(); }
 	        synchronized(waiter) { waiter.wait(); }
 	        assertTrue(ftc.getResult() instanceof Success);
 	        
-	        assertTrue(((Success)ftc.getResult()).result instanceof RawFoo);
-	        RawFoo rawFoo1 = (RawFoo)((Success)ftc.getResult()).result;
+	        assertTrue(((Success)ftc.getResult()).result instanceof Foo);
+	        Foo foo1 = (Foo)((Success)ftc.getResult()).result;
 	        
-	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/raw/RawFoo/"+rawFoo1.getId()+".json");
+	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/default/Foo/"+foo1.getId()+".json");
 	        logger.trace("Working file: {}", working.getPath());
-	        File repo = new File("example/repos/raw/RawFoo/"+rawFoo1.getId()+".json");
+	        File repo = new File("example/repos/default/Foo/"+foo1.getId()+".json");
 	        logger.trace("Repo file: {}", repo.getPath());
 	        
 	        assertFalse(working.exists());
 	        assertTrue(repo.exists());
 	        assertFalse(FileUtil.isLocked(repo));
 	        
-	        assertEquals("thisRawFoo", rawFoo1.id);
-	        assertEquals(new Integer(1), rawFoo1.sequence);
-	        assertEquals("This has been updated", rawFoo1.description);
-	        assertEquals(2, rawFoo1.bars.size());
+	        assertEquals("thisFoo", foo1.id);
+	        assertEquals(new Integer(1), foo1.sequence);
+	        assertEquals("This has been updated", foo1.description);
+	        assertEquals(2, foo1.bars.size());
 	        	        
 	        logger.debug("Ending connection thread");
 	        synchronized(ftc.waiter()) {ftc.end().notify(); }
@@ -118,15 +118,15 @@ public class FemRawTests {
 	        ftc.start();
 	        synchronized(waiter) { waiter.wait(); }
 	        
-	        RawFoo rawFoo1;
+	        Foo foo1;
 	        while (true) {
-	 			rawFoo1 = new RawFoo()
+	 			foo1 = new Foo()
 						.setId(StringUtil.random(6))
-						.setDescription("This is a RawFoo!")
+						.setDescription("This is a foo!")
 						.setSequence(1);
 				
-				logger.debug("Saving RawFoo with id '{}'", rawFoo1.id);
-		        synchronized(ftc.waiter()) { ftc.save(rawFoo1).notify(); }
+				logger.debug("Saving Foo with id '{}'", foo1.id);
+		        synchronized(ftc.waiter()) { ftc.save(foo1).notify(); }
 		        synchronized(waiter) { waiter.wait(); }
 		        
 		        if (ftc.getResult() instanceof Success) {
@@ -139,15 +139,15 @@ public class FemRawTests {
 		        		}
 		        }
 	        }
-	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/raw/RawFoo/"+rawFoo1.getId()+".json");
+	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/default/Foo/"+foo1.getId()+".json");
 	        logger.trace("Working file: {}", working.getPath());
-	        File repo = new File("example/repos/raw/RawFoo/"+rawFoo1.getId()+".json");
+	        File repo = new File("example/repos/default/Foo/"+foo1.getId()+".json");
 	        logger.trace("Repo file: {}", repo.getPath());
 	        
-	        assertNotNull(ftc.entityManager().getOcn(rawFoo1));
-	        assertNotNull(ftc.entityManager().getOriginalOcn(rawFoo1));
-	        assertEquals(new Integer(0), ftc.entityManager().getOcn(rawFoo1));
-	        assertEquals(ftc.entityManager().getOcn(rawFoo1), ftc.entityManager().getOriginalOcn(rawFoo1));
+	        assertNotNull(ftc.entityManager().getOcn(foo1));
+	        assertNotNull(ftc.entityManager().getOriginalOcn(foo1));
+	        assertEquals(new Integer(0), ftc.entityManager().getOcn(foo1));
+	        assertEquals(ftc.entityManager().getOcn(foo1), ftc.entityManager().getOriginalOcn(foo1));
 
 	        assertTrue(working.exists());
 	        assertTrue(repo.exists());
@@ -213,15 +213,15 @@ public class FemRawTests {
 	        ftc.start();
 	        synchronized(waiter) { waiter.wait(); }
 	        
-	        RawFoo rawFoo1;
+	        Foo foo1;
 	        while (true) {
-	 			rawFoo1 = new RawFoo()
+	 			foo1 = new Foo()
 						.setId(StringUtil.random(6))
-						.setDescription("This is a RawFoo!")
+						.setDescription("This is a foo!")
 						.setSequence(1);
 				
-				logger.debug("Saving RawFoo with id '{}'", rawFoo1.id);
-		        synchronized(ftc.waiter()) { ftc.save(rawFoo1).notify(); }
+				logger.debug("Saving Foo with id '{}'", foo1.id);
+		        synchronized(ftc.waiter()) { ftc.save(foo1).notify(); }
 		        synchronized(waiter) { waiter.wait(); }
 		        
 		        if (ftc.getResult() instanceof Success) {
@@ -234,10 +234,14 @@ public class FemRawTests {
 		        		}
 		        }
 	        }
+	        assertNotNull(ftc.entityManager().getOcn(foo1));
+	        assertNotNull(ftc.entityManager().getOriginalOcn(foo1));
+	        assertEquals(new Integer(0), ftc.entityManager().getOcn(foo1));
+	        assertEquals(ftc.entityManager().getOcn(foo1), ftc.entityManager().getOriginalOcn(foo1));
 	        
-	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/raw/RawFoo/"+rawFoo1.getId()+".json");
+	        File working = new File("example/femf/connections/"+ftc.entityManager().getId()+"/default/Foo/"+foo1.getId()+".json");
 	        logger.trace("Working file: {}", working.getPath());
-	        File repo = new File("example/repos/raw/RawFoo/"+rawFoo1.getId()+".json");
+	        File repo = new File("example/repos/default/Foo/"+foo1.getId()+".json");
 	        logger.trace("Repo file: {}", repo.getPath());
 	        
 	        assertTrue(working.exists());

@@ -16,7 +16,7 @@ import com.k2.Util.Identity.IdentityUtil;
 import com.k2.Util.classes.ClassUtil;
 
 
-public class KeyUtilTests {
+public class KeyUtilTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 		

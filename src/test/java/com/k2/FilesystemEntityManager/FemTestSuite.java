@@ -5,18 +5,18 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-	FemConfigTests.class,
-	FemSingleActionTests.class,
-	FemMultipleActionTests.class,
-	FemSingleActionXmlTests.class,
-	FemMultipleActionXmlTests.class,
-	FemMultiThreadedTests.class,
-	FemRawTests.class,
-	KeyUtilTests.class,
-	LinkTests.class,
-	MetamodelTests.class,
+	FemConfigTest.class,
+	FemSingleActionTest.class,
+	FemMultipleActionTest.class,
+	FemSingleActionXmlTest.class,
+	FemMultipleActionXmlTest.class,
+	FemMultiThreadedTest.class,
+	FemRawTest.class,
+	KeyUtilTest.class,
+	LinkTest.class,
+	MetamodelTest.class,
 	EntityUtilTest.class,
-	FemQueryTests.class
+	FemQueryTest.class
 })
 public class FemTestSuite {
 

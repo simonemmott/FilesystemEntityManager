@@ -16,7 +16,7 @@ import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 
 
-public class FemSingleActionXmlTests {
+public class FemSingleActionXmlTest {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 		
