@@ -383,8 +383,7 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 					f.set(staticMetaModel, attr);
 				}
 			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.error("Failed to populate static metamodel for class {}", e, cls.getName());
 			}
 		}
 		return this;
