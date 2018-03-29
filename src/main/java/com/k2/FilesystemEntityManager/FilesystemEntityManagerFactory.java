@@ -367,7 +367,7 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
 		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get criteria builder. The current state is {}", "{}", state));
-		return new FemCriteriaBuilder(this);
+		return new FemCriteriaBuilder();
 	}
 	
 	FemMetamodel metamodel = new FemMetamodel();

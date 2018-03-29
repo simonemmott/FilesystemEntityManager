@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.k2.FilesystemEntityManager.FemError;
-import com.k2.FilesystemEntityManager.util.EntityUtil;
-import com.k2.FilesystemEntityManager.util.cache.EntityLink;
 import com.k2.Proxy.AProxy;
 import com.k2.Proxy.ProxyFactory;
+import com.k2.Util.entity.EntityUtil;
 import com.k2.Util.classes.ClassUtil;
+import com.k2.Util.entity.EntityLink;
 
 public class ProxyUtil {
 	

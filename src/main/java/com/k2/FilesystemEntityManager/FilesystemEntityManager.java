@@ -47,13 +47,13 @@ import org.slf4j.LoggerFactory;
 import com.k2.FilesystemEntityManager.criteria.FemCriteriaQuery;
 import com.k2.FilesystemEntityManager.criteria.FemTypedQuery;
 import com.k2.FilesystemEntityManager.proxy.ProxyUtil;
-import com.k2.FilesystemEntityManager.util.EntityUtil;
-import com.k2.FilesystemEntityManager.util.KeyUtil;
-import com.k2.FilesystemEntityManager.util.cache.EntityLink;
+import com.k2.Util.entity.EntityUtil;
 import com.k2.Util.FileUtil;
+import com.k2.Util.KeyUtil;
 import com.k2.Util.ObjectUtil;
 import com.k2.Util.StringUtil;
 import com.k2.Util.Identity.IdentityUtil;
+import com.k2.Util.entity.EntityLink;
 import com.k2.Util.exceptions.FileLockedException;
 /**
  * This class defines the thread specific entity manager that provides the API to fetch, save and delete instances of objects into and out of 

@@ -11,9 +11,12 @@ import org.slf4j.LoggerFactory;
 import com.k2.FilesystemEntityManager.testEntities.Bar;
 import com.k2.FilesystemEntityManager.testEntities.Foo;
 import com.k2.FilesystemEntityManager.testEntities.Too;
-import com.k2.FilesystemEntityManager.util.EntityUtil;
-import com.k2.FilesystemEntityManager.util.cache.*;
+import com.k2.Util.entity.EntityUtil;
 import com.k2.Util.classes.Getter.Type;
+import com.k2.Util.entity.EntityCache;
+import com.k2.Util.entity.EntityField;
+import com.k2.Util.entity.EntityJoin;
+import com.k2.Util.entity.EntityLink;
 
 
 public class EntityUtilTest {

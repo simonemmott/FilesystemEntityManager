@@ -41,10 +41,7 @@ public class FemCriteriaBuilder implements CriteriaBuilder {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-	private FilesystemEntityManagerFactory femf;
-
-	public FemCriteriaBuilder(FilesystemEntityManagerFactory femf) {
-		this.femf = femf;
+	public FemCriteriaBuilder() {
 	}
 
 	@Override

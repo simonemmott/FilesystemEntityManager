@@ -6,8 +6,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import com.google.gson.annotations.Expose;
-import com.k2.FilesystemEntityManager.RootId;
 import com.k2.FilesystemEntityManager.example.Too;
+import com.k2.Util.RootId;
 
 @Entity
 @Table(name="Toos")

@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 
 import javax.persistence.EntityManager;
 
-import com.k2.FilesystemEntityManager.util.KeyUtil;
+import com.k2.Util.KeyUtil;
 import com.k2.Util.ObjectUtil;
 
 public class KeyLinkProxyControllerImpl<D,E> implements KeyLinkProxyController<D, E> {

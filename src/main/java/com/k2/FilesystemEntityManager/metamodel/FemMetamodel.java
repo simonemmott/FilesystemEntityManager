@@ -146,4 +146,6 @@ public class FemMetamodel implements Metamodel {
 		return new HashSet<EmbeddableType<?>>(embeddableTypes.values());
 	}
 
+	public boolean isModelled(Class<?> cls) { return managedTypes.containsKey(cls); }
+
 }

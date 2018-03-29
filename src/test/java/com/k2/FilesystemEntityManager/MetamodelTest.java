@@ -27,9 +27,9 @@ import org.slf4j.LoggerFactory;
 import com.k2.FilesystemEntityManager.metamodel.FemMetamodel;
 import com.k2.FilesystemEntityManager.metamodel.generator.StaticMetamodelGenarator;
 import com.k2.FilesystemEntityManager.testEntities.*;
-import com.k2.FilesystemEntityManager.util.KeyUtil;
 import com.k2.Proxy.AProxy;
 import com.k2.Util.FileUtil;
+import com.k2.Util.KeyUtil;
 
 
 public class MetamodelTest {
