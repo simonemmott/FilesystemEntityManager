@@ -44,8 +44,7 @@ import javax.xml.bind.Unmarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.k2.FilesystemEntityManager.criteria.FemCriteriaQuery;
-import com.k2.FilesystemEntityManager.criteria.FemTypedQuery;
+import com.k2.Expressions.criteria.CriteriaQueryImpl;
 import com.k2.FilesystemEntityManager.proxy.ProxyUtil;
 import com.k2.Util.entity.EntityUtil;
 import com.k2.Util.FileUtil;
@@ -1487,8 +1486,8 @@ public class FilesystemEntityManager implements EntityManager{
 
 	@Override
 	public <T> TypedQuery<T> createQuery(CriteriaQuery<T> criteria) {
-		if (!(criteria instanceof FemCriteriaQuery)) throw new FemError("Invalid criteria query implementation. Expected instance of 'FemCriteriaQuery'");
-		FemTypedQuery<T> tQry = new FemTypedQuery<T>(this, (FemCriteriaQuery<T>)criteria);
+		if (!(criteria instanceof CriteriaQueryImpl)) throw new FemError("Invalid criteria query implementation. Expected instance of 'FemCriteriaQuery'");
+		FemTypedQuery<T> tQry = new FemTypedQuery<T>(this, (CriteriaQueryImpl<T>)criteria);
 		return tQry;
 	}
 

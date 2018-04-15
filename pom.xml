@@ -26,7 +26,7 @@
     <dependency>
 		<groupId>com.k2</groupId>
 		<artifactId>Expressions</artifactId>
-		<version>0.1.4</version>
+		<version>0.1.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>

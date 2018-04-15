@@ -1,4 +1,4 @@
-package com.k2.FilesystemEntityManager.criteria;
+package com.k2.FilesystemEntityManager;
 
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -18,22 +18,23 @@ import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Predicate;
 
 import com.k2.Expressions.ParameterEvaluator;
+import com.k2.Expressions.criteria.CriteriaQueryImpl;
+import com.k2.Expressions.criteria.PathEvaluator;
+import com.k2.Expressions.criteria.PathImpl;
 import com.k2.Expressions.evaluators.SimpleParameterEvaluator;
 import com.k2.Expressions.expression.CurrentTime;
 import com.k2.Expressions.expression.K2ParameterExpression;
 import com.k2.Expressions.predicate.K2Predicate;
-import com.k2.FilesystemEntityManager.FemError;
-import com.k2.FilesystemEntityManager.FilesystemEntityManager;
 
 public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQuery<T>, ParameterEvaluator, PathEvaluator{
 	
-	FemCriteriaQuery<T> qry;
+	CriteriaQueryImpl<T> qry;
 	FilesystemEntityManager fem;
 
-	public FemTypedQuery(FilesystemEntityManager fem, FemCriteriaQuery<T> qry) {
+	public FemTypedQuery(FilesystemEntityManager fem, CriteriaQueryImpl<T> qry) {
 		this.fem = fem;
 		this.qry = qry;
-		for (K2ParameterExpression<?> p : qry.getFemQueryParameters().getParameters()) {
+		for (K2ParameterExpression<?> p : qry.getQueryParameters().getParameters()) {
 			this.add(p);
 		}
 	}
@@ -78,22 +79,22 @@ public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQ
 
 	@Override
 	public K2ParameterExpression<?> getParameter(String alias) {
-		return qry.getFemQueryParameters().getParamater(alias);
+		return qry.getQueryParameters().getParamater(alias);
 	}
 
 	@Override
 	public K2ParameterExpression<?> getParameter(int pos) {
-		return qry.getFemQueryParameters().getParamater(pos);
+		return qry.getQueryParameters().getParamater(pos);
 	}
 
 	@Override
 	public <P> K2ParameterExpression<P> getParameter(String alias, Class<P> type) {
-		return qry.getFemQueryParameters().getParamater(alias, type);
+		return qry.getQueryParameters().getParamater(alias, type);
 	}
 
 	@Override
 	public <P> K2ParameterExpression<P> getParameter(int pos, Class<P> type) {
-		return qry.getFemQueryParameters().getParamater(pos, type);
+		return qry.getQueryParameters().getParamater(pos, type);
 	}
 
 	@Override
@@ -118,7 +119,7 @@ public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQ
 	@Override
 	public Set<Parameter<?>> getParameters() {
 		Set<Parameter<?>> s = new HashSet<Parameter<?>>();
-		s.addAll(qry.getFemQueryParameters().getParameters());
+		s.addAll(qry.getQueryParameters().getParameters());
 		return s;
 	}
 
@@ -277,7 +278,7 @@ public class FemTypedQuery<T> extends SimpleParameterEvaluator implements TypedQ
 
 
 	@Override
-	public <V> V valueOf(FemPath<V> path) {
+	public <V> V valueOf(PathImpl<V> path) {
 		return path.getValueFromRoot(matchRoot);
 	}
 

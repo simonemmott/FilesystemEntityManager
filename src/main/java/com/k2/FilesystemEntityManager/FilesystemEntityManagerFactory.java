@@ -35,7 +35,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import com.k2.FilesystemEntityManager.criteria.FemCriteriaBuilder;
+import com.k2.Expressions.criteria.CriteriaBuilderImpl;
 import com.k2.FilesystemEntityManager.metamodel.FemEntityType;
 import com.k2.FilesystemEntityManager.metamodel.FemMetamodel;
 import com.k2.Util.FileUtil;
@@ -367,7 +367,7 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
 		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get criteria builder. The current state is {}", "{}", state));
-		return new FemCriteriaBuilder();
+		return new CriteriaBuilderImpl();
 	}
 	
 	FemMetamodel metamodel = new FemMetamodel();
