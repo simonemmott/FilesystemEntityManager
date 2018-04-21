@@ -3,8 +3,6 @@ package com.k2.FilesystemEntityManager.testEntities;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.StaticMetamodel;
 
-import com.k2.FilesystemEntityManager.metamodel.FieldSingularAttribute;
-
 @StaticMetamodel(Too.class)
 public class Too_ {
 	

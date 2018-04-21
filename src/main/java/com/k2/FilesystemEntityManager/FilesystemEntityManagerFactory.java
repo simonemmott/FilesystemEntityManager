@@ -26,7 +26,6 @@ import javax.persistence.SynchronizationType;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.ManagedType;
-import javax.persistence.metamodel.Metamodel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +35,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.k2.Expressions.criteria.CriteriaBuilderImpl;
-import com.k2.FilesystemEntityManager.metamodel.FemEntityType;
-import com.k2.FilesystemEntityManager.metamodel.FemMetamodel;
+import com.k2.Expressions.metamodel.MetamodelImpl;
 import com.k2.Util.FileUtil;
 import com.k2.Util.StringUtil;
 import com.k2.Util.classes.ClassUtil;
@@ -367,10 +365,10 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 	@Override
 	public CriteriaBuilder getCriteriaBuilder() {
 		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get criteria builder. The current state is {}", "{}", state));
-		return new CriteriaBuilderImpl();
+		return new CriteriaBuilderImpl(metamodel);
 	}
 	
-	FemMetamodel metamodel = new FemMetamodel();
+	MetamodelImpl metamodel = new MetamodelImpl();
 	
 	public FilesystemEntityManagerFactory manage(Class<?> ... classes) {
 		for (Class<?> cls : classes) {
@@ -397,7 +395,7 @@ public class FilesystemEntityManagerFactory implements EntityManagerFactory{
 	}
 
 	@Override
-	public FemMetamodel getMetamodel() {
+	public MetamodelImpl getMetamodel() {
 		if (!isOpen()) throw new IllegalStateException(StringUtil.replaceAll("Unable to get entity manager factory metamodel. The current state is {}", "{}", state));
 		return metamodel;
 	}
