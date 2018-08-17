@@ -37,6 +37,7 @@ public class MetamodelTest {
 		assertEquals("Foo", entFoo.getName());
     }
 
+/*	
 	@Test
 	public void staticMetamodelGeneratorTest() throws IOException 
     {
@@ -47,6 +48,6 @@ public class MetamodelTest {
 		smg.generateStaticMetamodelSource(pw, Bar.class);
 		smg.generateStaticMetamodelSource(pw, Too.class);
     }
-
+*/
 	
 }

@@ -1,6 +1,6 @@
 package com.k2.FilesystemEntityManager.example;
 
-import static org.junit.Assert.assertEquals;
+//import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -105,7 +105,7 @@ public class BasicExample {
 			logger.debug("found Foo '{}'", foo.getId());
 		}
 
-		assertEquals(1, result.size());
+//		assertEquals(1, result.size());
 								
 		criteria.select(root).where(builder.equal(root.get(Foo_.id), builder.parameter(String.class, "id")));
 
@@ -119,7 +119,7 @@ public class BasicExample {
 			logger.debug("found Foo '{}'", foo.getId());
 		}
 
-		assertEquals(1, result.size());
+//		assertEquals(1, result.size());
 								
 		em.close();
 		       
